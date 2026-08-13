@@ -7,6 +7,7 @@ import { api } from '../lib/api';
 import type { FormListItem } from '../lib/types';
 import Modal from '../components/Modal';
 import TopBar from '../components/TopBar';
+import NavBarTabs from '../components/NavBarTabs';
 import Sidebar from '../components/Sidebar';
 import AISuggestionCard from '../components/AISuggestionCard';
 import FormsTable from '../components/FormsTable';
@@ -154,6 +155,9 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-white flex flex-col font-sans">
       {/* Shared Top Navigation Bar */}
       <TopBar />
+
+      {/* Second Row Navigation Tabs */}
+      <NavBarTabs />
 
       {/* Main Two-Column Viewport */}
       <div className="flex-1 flex overflow-hidden">
