@@ -30,7 +30,37 @@ function getRatingMax(q: Question): number {
   return 5;
 }
 
-export default function QuestionRenderer({
+export default function QuestionRenderer(props: QuestionRendererProps) {
+  const { question } = props;
+
+  if (question.type === 'short_text' || question.type === 'email') {
+    return <TextInputRenderer {...props} />;
+  }
+  if (question.type === 'long_text') {
+    return <TextAreaRenderer {...props} />;
+  }
+  if (question.type === 'number') {
+    return <NumberInputRenderer {...props} />;
+  }
+  if (question.type === 'multiple_choice' || question.type === 'dropdown') {
+    return <ChoiceRenderer {...props} />;
+  }
+  if (question.type === 'yes_no') {
+    return <YesNoRenderer {...props} />;
+  }
+  if (question.type === 'rating') {
+    return <RatingRenderer {...props} />;
+  }
+  if (question.type === 'file_upload') {
+    return <FileUploadRenderer {...props} />;
+  }
+
+  return <div className="text-gray-400 italic">Unknown question type: {question.type}</div>;
+}
+
+// ── Text Input ─────────────────────────────────────────────────────────────
+
+function TextInputRenderer({
   question,
   mode,
   value,
@@ -40,421 +70,499 @@ export default function QuestionRenderer({
   questionNumber,
   accentColor = '#6366f1',
 }: QuestionRendererProps) {
-  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
   const isRespondent = mode === 'respondent';
 
-  // Auto-focus in respondent mode
   useEffect(() => {
     if (isRespondent && inputRef.current) {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [question.id, isRespondent]);
 
-  const handleEnter = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey && isRespondent) {
-      e.preventDefault();
-      onSubmit?.(value);
-    }
-  };
-
-  const accent = accentColor;
-  const accentLight = `${accent}20`;
-
-  // ── Short Text ──────────────────────────────────────────────────────────
-  if (question.type === 'short_text' || question.type === 'email') {
-    return (
-      <div className="w-full">
-        <QuestionTitle question={question} questionNumber={questionNumber} />
-        <div className="relative mt-6">
-          <input
-            ref={inputRef as React.Ref<HTMLInputElement>}
-            type={question.type === 'email' ? 'email' : 'text'}
-            className="w-full bg-transparent border-0 border-b-2 text-xl py-3 px-0 outline-none transition-all duration-200"
-            style={{
-              borderColor: focused ? accent : '#e5e7eb',
-              color: '#111827',
-              fontFamily: 'Inter, system-ui, sans-serif',
-            }}
-            placeholder={question.type === 'email' ? 'name@example.com' : 'Type your answer here...'}
-            value={typeof value === 'string' ? value : ''}
-            onChange={(e) => onChange?.(e.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            onKeyDown={handleEnter}
-            readOnly={!isRespondent}
-          />
-          <div
-            className="absolute bottom-0 left-0 h-0.5 transition-all duration-300"
-            style={{ width: focused ? '100%' : '0%', background: accent }}
-          />
-        </div>
-        {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
-        {isRespondent && (
-          <div className="mt-4">
-            <button
-              className="btn btn-primary btn-sm"
-              style={{ background: accent }}
-              onClick={() => onSubmit?.(value)}
-            >
-              OK <span className="opacity-70 text-xs">↵</span>
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // ── Long Text ───────────────────────────────────────────────────────────
-  if (question.type === 'long_text') {
-    return (
-      <div className="w-full">
-        <QuestionTitle question={question} questionNumber={questionNumber} />
-        <div className="relative mt-6">
-          <textarea
-            ref={inputRef as React.Ref<HTMLTextAreaElement>}
-            className="w-full bg-transparent border-0 border-b-2 text-xl py-3 px-0 outline-none transition-all duration-200 resize-none"
-            style={{
-              borderColor: focused ? accent : '#e5e7eb',
-              color: '#111827',
-              fontFamily: 'Inter, system-ui, sans-serif',
-              minHeight: '120px',
-            }}
-            placeholder="Type your answer here... (Shift+Enter for new line)"
-            value={typeof value === 'string' ? value : ''}
-            onChange={(e) => onChange?.(e.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey && isRespondent) {
-                e.preventDefault();
-                onSubmit?.(value);
-              }
-            }}
-            readOnly={!isRespondent}
-          />
-          <div
-            className="absolute bottom-0 left-0 h-0.5 transition-all duration-300"
-            style={{ width: focused ? '100%' : '0%', background: accent }}
-          />
-        </div>
-        {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
-        {isRespondent && (
-          <p className="mt-2 text-sm text-gray-400">
-            Press <kbd className="px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">Shift ↵</kbd> for a new line
-          </p>
-        )}
-        {isRespondent && (
-          <div className="mt-4">
-            <button
-              className="btn btn-primary btn-sm"
-              style={{ background: accent }}
-              onClick={() => onSubmit?.(value)}
-            >
-              OK <span className="opacity-70 text-xs">↵</span>
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // ── Number ──────────────────────────────────────────────────────────────
-  if (question.type === 'number') {
-    return (
-      <div className="w-full">
-        <QuestionTitle question={question} questionNumber={questionNumber} />
-        <div className="relative mt-6">
-          <input
-            ref={inputRef as React.Ref<HTMLInputElement>}
-            type="number"
-            className="w-full bg-transparent border-0 border-b-2 text-xl py-3 px-0 outline-none transition-all duration-200"
-            style={{
-              borderColor: focused ? accent : '#e5e7eb',
-              color: '#111827',
-              fontFamily: 'Inter, system-ui, sans-serif',
-            }}
-            placeholder="Enter a number..."
-            value={value !== undefined && value !== null ? String(value) : ''}
-            onChange={(e) => onChange?.(e.target.value ? Number(e.target.value) : '')}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            onKeyDown={handleEnter}
-            readOnly={!isRespondent}
-          />
-          <div
-            className="absolute bottom-0 left-0 h-0.5 transition-all duration-300"
-            style={{ width: focused ? '100%' : '0%', background: accent }}
-          />
-        </div>
-        {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
-        {isRespondent && (
-          <div className="mt-4">
-            <button
-              className="btn btn-primary btn-sm"
-              style={{ background: accent }}
-              onClick={() => onSubmit?.(value)}
-            >
-              OK <span className="opacity-70 text-xs">↵</span>
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // ── Multiple Choice ─────────────────────────────────────────────────────
-  if (question.type === 'multiple_choice' || question.type === 'dropdown') {
-    const options = getOptions(question);
-    const selectedId =
-      typeof value === 'object' && value !== null && 'selected_option_id' in (value as object)
-        ? (value as { selected_option_id: string }).selected_option_id
-        : typeof value === 'string'
-        ? value
-        : null;
-
-    const handleSelect = (optId: string) => {
-      if (!isRespondent) return;
-      const newVal = { selected_option_id: optId };
-      onChange?.(newVal);
-      // Auto-advance after a short delay for better UX
-      setTimeout(() => onSubmit?.(newVal), 400);
-    };
-
-    // Keyboard shortcut: A, B, C... selects option
-    useEffect(() => {
-      if (!isRespondent) return;
-      const handler = (e: KeyboardEvent) => {
-        const idx = LETTER_KEYS.indexOf(e.key.toUpperCase());
-        if (idx >= 0 && idx < options.length) {
-          handleSelect(options[idx].id);
-        }
-      };
-      window.addEventListener('keydown', handler);
-      return () => window.removeEventListener('keydown', handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isRespondent, options, value]);
-
-    return (
-      <div className="w-full">
-        <QuestionTitle question={question} questionNumber={questionNumber} />
-        <div className="mt-6 space-y-3 max-w-xl">
-          {options.map((opt, idx) => {
-            const isSelected = selectedId === opt.id;
-            return (
-              <button
-                key={opt.id}
-                id={`option-${question.id}-${opt.id}`}
-                onClick={() => handleSelect(opt.id)}
-                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl border-2 text-left transition-all duration-150 font-medium"
-                style={{
-                  borderColor: isSelected ? accent : '#e5e7eb',
-                  background: isSelected ? accentLight : '#fff',
-                  color: isSelected ? accent : '#374151',
-                  cursor: isRespondent ? 'pointer' : 'default',
-                  transform: isSelected ? 'translateX(4px)' : 'none',
-                }}
-              >
-                <span
-                  className="flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold border"
-                  style={{
-                    borderColor: isSelected ? accent : '#d1d5db',
-                    background: isSelected ? accent : '#f9fafb',
-                    color: isSelected ? '#fff' : '#6b7280',
-                  }}
-                >
-                  {LETTER_KEYS[idx]}
-                </span>
-                <span>{opt.label}</span>
-                {isSelected && (
-                  <svg className="ml-auto w-5 h-5" viewBox="0 0 20 20" fill={accent}>
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                )}
-              </button>
-            );
-          })}
-        </div>
-        {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
-      </div>
-    );
-  }
-
-  // ── Yes / No ────────────────────────────────────────────────────────────
-  if (question.type === 'yes_no') {
-    const handleYesNo = (val: string) => {
-      if (!isRespondent) return;
-      onChange?.(val);
-      setTimeout(() => onSubmit?.(val), 300);
-    };
-
-    useEffect(() => {
-      if (!isRespondent) return;
-      const handler = (e: KeyboardEvent) => {
-        if (e.key.toLowerCase() === 'y') handleYesNo('yes');
-        if (e.key.toLowerCase() === 'n') handleYesNo('no');
-      };
-      window.addEventListener('keydown', handler);
-      return () => window.removeEventListener('keydown', handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isRespondent]);
-
-    return (
-      <div className="w-full">
-        <QuestionTitle question={question} questionNumber={questionNumber} />
-        <div className="mt-6 flex gap-4">
-          {[
-            { val: 'yes', label: 'Yes', key: 'Y', emoji: '👍' },
-            { val: 'no', label: 'No', key: 'N', emoji: '👎' },
-          ].map(({ val, label, key, emoji }) => {
-            const isSelected = value === val;
-            return (
-              <button
-                key={val}
-                id={`yesno-${question.id}-${val}`}
-                onClick={() => handleYesNo(val)}
-                className="flex items-center gap-3 px-6 py-4 rounded-xl border-2 font-semibold text-lg transition-all duration-150"
-                style={{
-                  borderColor: isSelected ? accent : '#e5e7eb',
-                  background: isSelected ? accentLight : '#fff',
-                  color: isSelected ? accent : '#374151',
-                  cursor: isRespondent ? 'pointer' : 'default',
-                }}
-              >
-                <span className="text-2xl">{emoji}</span>
-                <span>{label}</span>
-                <kbd className="ml-2 text-xs opacity-50 px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">{key}</kbd>
-              </button>
-            );
-          })}
-        </div>
-        {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
-      </div>
-    );
-  }
-
-  // ── Rating ──────────────────────────────────────────────────────────────
-  if (question.type === 'rating') {
-    const max = getRatingMax(question);
-    const numVal = typeof value === 'number' ? value : null;
-
-    const handleRating = (n: number) => {
-      if (!isRespondent) return;
-      onChange?.(n);
-      setTimeout(() => onSubmit?.(n), 300);
-    };
-
-    useEffect(() => {
-      if (!isRespondent) return;
-      const handler = (e: KeyboardEvent) => {
-        const n = parseInt(e.key, 10);
-        if (!isNaN(n) && n >= 1 && n <= max) handleRating(n);
-      };
-      window.addEventListener('keydown', handler);
-      return () => window.removeEventListener('keydown', handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isRespondent, max]);
-
-    return (
-      <div className="w-full">
-        <QuestionTitle question={question} questionNumber={questionNumber} />
-        <div className="mt-6">
-          <div className="flex gap-2 flex-wrap">
-            {Array.from({ length: max }, (_, i) => i + 1).map((n) => {
-              const isSelected = numVal !== null && n <= numVal;
-              const isExact = numVal === n;
-              return (
-                <button
-                  key={n}
-                  id={`rating-${question.id}-${n}`}
-                  onClick={() => handleRating(n)}
-                  className="w-12 h-12 rounded-xl border-2 font-bold text-lg transition-all duration-150"
-                  style={{
-                    borderColor: isSelected ? accent : '#e5e7eb',
-                    background: isSelected ? accent : '#fff',
-                    color: isSelected ? '#fff' : '#9ca3af',
-                    cursor: isRespondent ? 'pointer' : 'default',
-                    transform: isExact ? 'scale(1.15)' : 'scale(1)',
-                    boxShadow: isExact ? `0 0 0 4px ${accentLight}` : 'none',
-                  }}
-                >
-                  {n}
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex justify-between mt-2 text-xs text-gray-400 max-w-xs">
-            <span>Not at all</span>
-            <span>Absolutely</span>
-          </div>
-        </div>
-        {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
-      </div>
-    );
-  }
-
-  // ── File Upload ─────────────────────────────────────────────────────────
-  if (question.type === 'file_upload') {
-    const fileVal = value as { filename?: string } | null;
-    return (
-      <div className="w-full">
-        <QuestionTitle question={question} questionNumber={questionNumber} />
-        <div className="mt-6">
-          {isRespondent ? (
-            <div>
-              <label
-                htmlFor={`file-${question.id}`}
-                className="flex flex-col items-center justify-center w-full max-w-sm h-32 border-2 border-dashed rounded-xl cursor-pointer transition-colors duration-150 hover:border-indigo-400 hover:bg-indigo-50"
-                style={{ borderColor: '#d1d5db' }}
-              >
-                <svg className="w-8 h-8 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <p className="text-sm text-gray-500">
-                  {fileVal?.filename ? (
-                    <span className="font-medium text-indigo-600">{fileVal.filename}</span>
-                  ) : (
-                    <><span className="font-medium text-indigo-600">Click to upload</span> or drag and drop</>
-                  )}
-                </p>
-                <p className="text-xs text-gray-400 mt-1">Max 10MB</p>
-              </label>
-              <input
-                id={`file-${question.id}`}
-                type="file"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) {
-                    onChange?.({ filename: f.name, _file: f });
-                    onSubmit?.({ filename: f.name, _file: f });
-                  }
-                }}
-              />
-              {fileVal?.filename && (
-                <p className="mt-2 text-sm text-green-600 font-medium">✓ {fileVal.filename} selected</p>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 text-gray-400 text-sm border-2 border-dashed border-gray-200 rounded-xl px-4 py-6 max-w-sm">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              File upload
-            </div>
-          )}
-        </div>
-        {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
-      </div>
-    );
-  }
-
   return (
-    <div className="text-gray-400 italic">Unknown question type: {question.type}</div>
+    <div className="w-full">
+      <QuestionTitle question={question} questionNumber={questionNumber} />
+      <div className="relative mt-6">
+        <input
+          ref={inputRef}
+          type={question.type === 'email' ? 'email' : 'text'}
+          className="w-full bg-transparent border-0 border-b-2 text-xl py-3 px-0 outline-none transition-all duration-200"
+          style={{
+            borderColor: focused ? accentColor : '#e5e7eb',
+            color: '#111827',
+          }}
+          placeholder={question.type === 'email' ? 'name@example.com' : 'Type your answer here...'}
+          value={typeof value === 'string' ? value : ''}
+          onChange={(e) => onChange?.(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey && isRespondent) {
+              e.preventDefault();
+              onSubmit?.(value);
+            }
+          }}
+          readOnly={!isRespondent}
+        />
+        <div
+          className="absolute bottom-0 left-0 h-0.5 transition-all duration-300"
+          style={{ width: focused ? '100%' : '0%', background: accentColor }}
+        />
+      </div>
+      {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+      {isRespondent && (
+        <div className="mt-4">
+          <button
+            className="btn btn-primary btn-sm"
+            style={{ background: accentColor }}
+            onClick={() => onSubmit?.(value)}
+          >
+            OK <span className="opacity-70 text-xs">↵</span>
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
-// ── Shared Question Title ─────────────────────────────────────────────────────
+// ── Text Area ──────────────────────────────────────────────────────────────
+
+function TextAreaRenderer({
+  question,
+  mode,
+  value,
+  onChange,
+  onSubmit,
+  error,
+  questionNumber,
+  accentColor = '#6366f1',
+}: QuestionRendererProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [focused, setFocused] = useState(false);
+  const isRespondent = mode === 'respondent';
+
+  useEffect(() => {
+    if (isRespondent && textareaRef.current) {
+      setTimeout(() => textareaRef.current?.focus(), 100);
+    }
+  }, [question.id, isRespondent]);
+
+  return (
+    <div className="w-full">
+      <QuestionTitle question={question} questionNumber={questionNumber} />
+      <div className="relative mt-6">
+        <textarea
+          ref={textareaRef}
+          className="w-full bg-transparent border-0 border-b-2 text-xl py-3 px-0 outline-none transition-all duration-200 resize-none"
+          style={{
+            borderColor: focused ? accentColor : '#e5e7eb',
+            color: '#111827',
+            minHeight: '120px',
+          }}
+          placeholder="Type your answer here... (Shift+Enter for new line)"
+          value={typeof value === 'string' ? value : ''}
+          onChange={(e) => onChange?.(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey && isRespondent) {
+              e.preventDefault();
+              onSubmit?.(value);
+            }
+          }}
+          readOnly={!isRespondent}
+        />
+        <div
+          className="absolute bottom-0 left-0 h-0.5 transition-all duration-300"
+          style={{ width: focused ? '100%' : '0%', background: accentColor }}
+        />
+      </div>
+      {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+      {isRespondent && (
+        <p className="mt-2 text-sm text-gray-400">
+          Press <kbd className="px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">Shift ↵</kbd> for a new line
+        </p>
+      )}
+      {isRespondent && (
+        <div className="mt-4">
+          <button
+            className="btn btn-primary btn-sm"
+            style={{ background: accentColor }}
+            onClick={() => onSubmit?.(value)}
+          >
+            OK <span className="opacity-70 text-xs">↵</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Number Input ───────────────────────────────────────────────────────────
+
+function NumberInputRenderer({
+  question,
+  mode,
+  value,
+  onChange,
+  onSubmit,
+  error,
+  questionNumber,
+  accentColor = '#6366f1',
+}: QuestionRendererProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [focused, setFocused] = useState(false);
+  const isRespondent = mode === 'respondent';
+
+  useEffect(() => {
+    if (isRespondent && inputRef.current) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [question.id, isRespondent]);
+
+  return (
+    <div className="w-full">
+      <QuestionTitle question={question} questionNumber={questionNumber} />
+      <div className="relative mt-6">
+        <input
+          ref={inputRef}
+          type="number"
+          className="w-full bg-transparent border-0 border-b-2 text-xl py-3 px-0 outline-none transition-all duration-200"
+          style={{
+            borderColor: focused ? accentColor : '#e5e7eb',
+            color: '#111827',
+          }}
+          placeholder="Enter a number..."
+          value={value !== undefined && value !== null ? String(value) : ''}
+          onChange={(e) => onChange?.(e.target.value ? Number(e.target.value) : '')}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey && isRespondent) {
+              e.preventDefault();
+              onSubmit?.(value);
+            }
+          }}
+          readOnly={!isRespondent}
+        />
+        <div
+          className="absolute bottom-0 left-0 h-0.5 transition-all duration-300"
+          style={{ width: focused ? '100%' : '0%', background: accentColor }}
+        />
+      </div>
+      {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+      {isRespondent && (
+        <div className="mt-4">
+          <button
+            className="btn btn-primary btn-sm"
+            style={{ background: accentColor }}
+            onClick={() => onSubmit?.(value)}
+          >
+            OK <span className="opacity-70 text-xs">↵</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Choice Renderer ────────────────────────────────────────────────────────
+
+function ChoiceRenderer({
+  question,
+  mode,
+  value,
+  onChange,
+  onSubmit,
+  error,
+  questionNumber,
+  accentColor = '#6366f1',
+}: QuestionRendererProps) {
+  const isRespondent = mode === 'respondent';
+  const options = getOptions(question);
+  const selectedId =
+    typeof value === 'object' && value !== null && 'selected_option_id' in (value as object)
+      ? (value as { selected_option_id: string }).selected_option_id
+      : typeof value === 'string'
+      ? value
+      : null;
+
+  const handleSelect = (optId: string) => {
+    if (!isRespondent) return;
+    const newVal = { selected_option_id: optId };
+    onChange?.(newVal);
+    setTimeout(() => onSubmit?.(newVal), 400);
+  };
+
+  useEffect(() => {
+    if (!isRespondent) return;
+    const handler = (e: KeyboardEvent) => {
+      const idx = LETTER_KEYS.indexOf(e.key.toUpperCase());
+      if (idx >= 0 && idx < options.length) {
+        handleSelect(options[idx].id);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRespondent, options, value]);
+
+  const accentLight = `${accentColor}20`;
+
+  return (
+    <div className="w-full">
+      <QuestionTitle question={question} questionNumber={questionNumber} />
+      <div className="mt-6 space-y-3 max-w-xl">
+        {options.map((opt, idx) => {
+          const isSelected = selectedId === opt.id;
+          return (
+            <button
+              key={opt.id}
+              id={`option-${question.id}-${opt.id}`}
+              onClick={() => handleSelect(opt.id)}
+              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl border-2 text-left transition-all duration-150 font-medium"
+              style={{
+                borderColor: isSelected ? accentColor : '#e5e7eb',
+                background: isSelected ? accentLight : '#fff',
+                color: isSelected ? accentColor : '#374151',
+                cursor: isRespondent ? 'pointer' : 'default',
+                transform: isSelected ? 'translateX(4px)' : 'none',
+              }}
+            >
+              <span
+                className="flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold border"
+                style={{
+                  borderColor: isSelected ? accentColor : '#d1d5db',
+                  background: isSelected ? accentColor : '#f9fafb',
+                  color: isSelected ? '#fff' : '#6b7280',
+                }}
+              >
+                {LETTER_KEYS[idx]}
+              </span>
+              <span>{opt.label}</span>
+              {isSelected && (
+                <svg className="ml-auto w-5 h-5" viewBox="0 0 20 20" fill={accentColor}>
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              )}
+            </button>
+          );
+        })}
+      </div>
+      {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
+    </div>
+  );
+}
+
+// ── Yes / No ───────────────────────────────────────────────────────────────
+
+function YesNoRenderer({
+  question,
+  mode,
+  value,
+  onChange,
+  onSubmit,
+  error,
+  questionNumber,
+  accentColor = '#6366f1',
+}: QuestionRendererProps) {
+  const isRespondent = mode === 'respondent';
+
+  const handleYesNo = (val: string) => {
+    if (!isRespondent) return;
+    onChange?.(val);
+    setTimeout(() => onSubmit?.(val), 300);
+  };
+
+  useEffect(() => {
+    if (!isRespondent) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'y') handleYesNo('yes');
+      if (e.key.toLowerCase() === 'n') handleYesNo('no');
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRespondent]);
+
+  const accentLight = `${accentColor}20`;
+
+  return (
+    <div className="w-full">
+      <QuestionTitle question={question} questionNumber={questionNumber} />
+      <div className="mt-6 flex gap-4">
+        {[
+          { val: 'yes', label: 'Yes', key: 'Y', emoji: '👍' },
+          { val: 'no', label: 'No', key: 'N', emoji: '👎' },
+        ].map(({ val, label, key, emoji }) => {
+          const isSelected = value === val;
+          return (
+            <button
+              key={val}
+              id={`yesno-${question.id}-${val}`}
+              onClick={() => handleYesNo(val)}
+              className="flex items-center gap-3 px-6 py-4 rounded-xl border-2 font-semibold text-lg transition-all duration-150"
+              style={{
+                borderColor: isSelected ? accentColor : '#e5e7eb',
+                background: isSelected ? accentLight : '#fff',
+                color: isSelected ? accentColor : '#374151',
+                cursor: isRespondent ? 'pointer' : 'default',
+              }}
+            >
+              <span className="text-2xl">{emoji}</span>
+              <span>{label}</span>
+              <kbd className="ml-2 text-xs opacity-50 px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">{key}</kbd>
+            </button>
+          );
+        })}
+      </div>
+      {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
+    </div>
+  );
+}
+
+// ── Rating ─────────────────────────────────────────────────────────────────
+
+function RatingRenderer({
+  question,
+  mode,
+  value,
+  onChange,
+  onSubmit,
+  error,
+  questionNumber,
+  accentColor = '#6366f1',
+}: QuestionRendererProps) {
+  const isRespondent = mode === 'respondent';
+  const max = getRatingMax(question);
+  const numVal = typeof value === 'number' ? value : null;
+
+  const handleRating = (n: number) => {
+    if (!isRespondent) return;
+    onChange?.(n);
+    setTimeout(() => onSubmit?.(n), 300);
+  };
+
+  useEffect(() => {
+    if (!isRespondent) return;
+    const handler = (e: KeyboardEvent) => {
+      const n = parseInt(e.key, 10);
+      if (!isNaN(n) && n >= 1 && n <= max) handleRating(n);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRespondent, max]);
+
+  const accentLight = `${accentColor}20`;
+
+  return (
+    <div className="w-full">
+      <QuestionTitle question={question} questionNumber={questionNumber} />
+      <div className="mt-6">
+        <div className="flex gap-2 flex-wrap">
+          {Array.from({ length: max }, (_, i) => i + 1).map((n) => {
+            const isSelected = numVal !== null && n <= numVal;
+            const isExact = numVal === n;
+            return (
+              <button
+                key={n}
+                id={`rating-${question.id}-${n}`}
+                onClick={() => handleRating(n)}
+                className="w-12 h-12 rounded-xl border-2 font-bold text-lg transition-all duration-150"
+                style={{
+                  borderColor: isSelected ? accentColor : '#e5e7eb',
+                  background: isSelected ? accentColor : '#fff',
+                  color: isSelected ? '#fff' : '#9ca3af',
+                  cursor: isRespondent ? 'pointer' : 'default',
+                  transform: isExact ? 'scale(1.15)' : 'scale(1)',
+                  boxShadow: isExact ? `0 0 0 4px ${accentLight}` : 'none',
+                }}
+              >
+                {n}
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex justify-between mt-2 text-xs text-gray-400 max-w-xs">
+          <span>Not at all</span>
+          <span>Absolutely</span>
+        </div>
+      </div>
+      {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
+    </div>
+  );
+}
+
+// ── File Upload ────────────────────────────────────────────────────────────
+
+function FileUploadRenderer({
+  question,
+  mode,
+  value,
+  onChange,
+  onSubmit,
+  error,
+  questionNumber,
+}: QuestionRendererProps) {
+  const isRespondent = mode === 'respondent';
+  const fileVal = value as { filename?: string } | null;
+
+  return (
+    <div className="w-full">
+      <QuestionTitle question={question} questionNumber={questionNumber} />
+      <div className="mt-6">
+        {isRespondent ? (
+          <div>
+            <label
+              htmlFor={`file-${question.id}`}
+              className="flex flex-col items-center justify-center w-full max-w-sm h-32 border-2 border-dashed rounded-xl cursor-pointer transition-colors duration-150 hover:border-indigo-400 hover:bg-indigo-50"
+              style={{ borderColor: '#d1d5db' }}
+            >
+              <svg className="w-8 h-8 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <p className="text-sm text-gray-500">
+                {fileVal?.filename ? (
+                  <span className="font-medium text-indigo-600">{fileVal.filename}</span>
+                ) : (
+                  <><span className="font-medium text-indigo-600">Click to upload</span> or drag and drop</>
+                )}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">Max 10MB</p>
+            </label>
+            <input
+              id={`file-${question.id}`}
+              type="file"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) {
+                  onChange?.({ filename: f.name, _file: f });
+                  onSubmit?.({ filename: f.name, _file: f });
+                }
+              }}
+            />
+            {fileVal?.filename && (
+              <p className="mt-2 text-sm text-green-600 font-medium">✓ {fileVal.filename} selected</p>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-gray-400 text-sm border-2 border-dashed border-gray-200 rounded-xl px-4 py-6 max-w-sm">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            File upload
+          </div>
+        )}
+      </div>
+      {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+    </div>
+  );
+}
+
+// ── Question Title ─────────────────────────────────────────────────────────
 
 function QuestionTitle({
   question,
