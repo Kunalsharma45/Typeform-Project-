@@ -160,7 +160,7 @@ export default function BuilderRightSidebar({
           <div className="space-y-4 pb-4">
 
             {/* Box 1: Question */}
-            <div className="bg-[#f7f7f7] rounded-2xl p-4 space-y-3">
+            <div className="bg-[#f7f7f7] rounded-2xl p-5 space-y-4">
               <div className="flex items-center gap-1.5 text-sm font-bold text-gray-800">
                 <span>Question</span>
                 <HelpCircle className="w-4 h-4 text-gray-400" />
@@ -178,7 +178,7 @@ export default function BuilderRightSidebar({
             </div>
 
             {/* Box 2: Answer */}
-            <div className="bg-[#f7f7f7] rounded-2xl p-4 space-y-4">
+            <div className="bg-[#f7f7f7] rounded-2xl p-5 space-y-4">
               <div className="text-sm font-bold text-gray-800 mb-2">
                 Answer
               </div>
@@ -372,7 +372,7 @@ export default function BuilderRightSidebar({
             </div>
 
             {/* Box 3: Branching */}
-            <div className="bg-[#f7f7f7] rounded-2xl p-4 flex items-center justify-between">
+            <div className="bg-[#f7f7f7] rounded-2xl p-5 flex items-center justify-between">
               <span className="text-sm font-bold text-gray-800">Branching</span>
               <button 
                 onClick={showComingSoon}
@@ -383,7 +383,7 @@ export default function BuilderRightSidebar({
             </div>
 
             {/* Box 4: Comments */}
-            <div className="bg-[#f7f7f7] rounded-2xl p-4 flex items-center justify-between">
+            <div className="bg-[#f7f7f7] rounded-2xl p-5 flex items-center justify-between">
               <span className="text-sm font-bold text-gray-800">Comments</span>
               <button onClick={showComingSoon} className="w-8 h-8 flex items-center justify-center border border-emerald-200 bg-white rounded-full shadow-sm text-emerald-600 hover:bg-emerald-50 transition-colors">
                 <Sparkles className="w-4 h-4" />

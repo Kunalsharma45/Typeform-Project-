@@ -1,17 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import toast from 'react-hot-toast';
 import {
   ChevronRight,
   Share2,
   HelpCircle,
+  Eye,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const FormsIcon = () => (
   <svg
-    className="w-4 h-4 text-gray-700 stroke-[1.8]"
+    className="w-5 h-5 text-gray-700 stroke-[1.8]"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -26,9 +28,9 @@ const FormsIcon = () => (
 interface BuilderTopBarProps {
   formId: number;
   formTitle: string;
-  publicSlug: string | null;
-  status: 'draft' | 'published';
-  onTitleChange: (newTitle: string) => void;
+  publicSlug?: string | null;
+  status?: 'draft' | 'published';
+  onTitleChange?: (newTitle: string) => void;
 }
 
 export default function BuilderTopBar({
@@ -38,8 +40,15 @@ export default function BuilderTopBar({
   onTitleChange,
 }: BuilderTopBarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(formTitle);
+  
+  let activeTab = 'Content';
+  if (pathname?.includes('/workflow')) activeTab = 'Workflow';
+  if (pathname?.includes('/connect')) activeTab = 'Connect';
+
+  const tabs = ['Content', 'Workflow', 'Connect'];
 
   const showComingSoon = () => {
     toast('Coming soon', { icon: '🚧' });
@@ -56,9 +65,9 @@ export default function BuilderTopBar({
   };
 
   return (
-    <header className="w-full bg-white border-b border-gray-200/80 px-4 py-2.5 flex items-center justify-between z-30 sticky top-0">
+    <header className="w-full bg-white px-8 py-3.5 flex items-center justify-between z-30 sticky top-0">
       {/* Left: Breadcrumbs (Forms > My new form) */}
-      <div className="flex items-center gap-2 text-sm">
+      <div className="flex items-center gap-2 text-[15px]">
         <button
           onClick={() => router.push('/dashboard')}
           className="flex items-center gap-1.5 text-gray-700 hover:text-gray-900 font-semibold cursor-pointer transition-colors"
@@ -67,16 +76,16 @@ export default function BuilderTopBar({
           <span>Forms</span>
         </button>
 
-        <ChevronRight className="w-4 h-4 text-gray-400 stroke-[2]" />
+        <ChevronRight className="w-5 h-5 text-gray-400 stroke-[2]" />
 
         {editingTitle ? (
           <input
-            className="text-sm font-semibold text-gray-900 bg-transparent border-b-2 border-black outline-none px-1 py-0.5"
+            className="text-[15px] font-semibold text-gray-900 bg-transparent border-b-2 border-black outline-none px-1 py-0.5"
             value={titleDraft}
             onChange={(e) => setTitleDraft(e.target.value)}
             onBlur={() => {
               setEditingTitle(false);
-              if (titleDraft.trim() && titleDraft !== formTitle) {
+              if (titleDraft.trim() && titleDraft !== formTitle && onTitleChange) {
                 onTitleChange(titleDraft.trim());
               }
             }}
@@ -104,37 +113,68 @@ export default function BuilderTopBar({
       </div>
 
       {/* Center: Navigation Tabs (Content, Workflow, Connect) */}
-      <nav className="flex items-center gap-6 text-sm font-semibold">
-        <button className="text-gray-900 font-bold bg-gray-100 px-3 py-1 rounded-md transition-all">
-          Content
-        </button>
-        <button
-          onClick={() => router.push(`/forms/${formId}/workflow`)}
-          className="text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
-        >
-          Workflow
-        </button>
-        <button
-          onClick={showComingSoon}
-          className="text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
-        >
-          Connect
-        </button>
+      <nav className="flex items-center gap-2 text-[15px] font-semibold">
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab;
+          return (
+            <button
+              key={tab}
+              onClick={() => {
+                if (tab === 'Content') router.push(`/forms/${formId}/edit`);
+                if (tab === 'Workflow') router.push(`/forms/${formId}/workflow`);
+                if (tab === 'Connect') showComingSoon();
+              }}
+              className={`relative px-4 py-1.5 transition-colors z-10 cursor-pointer ${
+                isActive ? 'text-gray-900 font-bold' : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              {tab}
+              {isActive && (
+                <motion.div
+                  layoutId="activeTabBackground"
+                  className="absolute inset-0 bg-gray-100 rounded-md -z-10"
+                  transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+              {isActive && (
+                <motion.div
+                  layoutId="activeTabIndicator"
+                  className="absolute top-[-14px] left-1/2 -translate-x-1/2 w-12 h-[3px] bg-black rounded-b-sm"
+                  transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+            </button>
+          );
+        })}
       </nav>
 
-      {/* Right: Share, View Plans, Help, Avatar */}
+      {/* Right: Preview, Share, View Plans, Help, Avatar */}
       <div className="flex items-center gap-4">
         <button
-          onClick={handleShare}
-          className="border border-gray-200 hover:border-gray-300 text-gray-700 text-xs font-semibold px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 hover:bg-gray-50 transition-colors cursor-pointer"
+          onClick={() => {
+            if (publicSlug) {
+              window.open(`/f/${publicSlug}`, '_blank');
+            } else {
+              toast('Publish your form first to preview it!', { icon: '👁️' });
+            }
+          }}
+          className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition-colors cursor-pointer"
         >
-          <Share2 className="w-3.5 h-3.5 text-gray-600 stroke-[2]" />
+          <Eye className="w-4 h-4 stroke-[2]" />
+          <span>Preview</span>
+        </button>
+
+        <button
+          onClick={handleShare}
+          className="border border-gray-200 hover:border-gray-300 text-gray-700 text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-gray-50 transition-colors cursor-pointer"
+        >
+          <Share2 className="w-4 h-4 text-gray-600 stroke-[2]" />
           <span>Share</span>
         </button>
 
         <button
           onClick={showComingSoon}
-          className="bg-[#046a38] hover:bg-[#02522b] text-white text-xs font-semibold px-4 py-1.5 rounded-full transition-colors shadow-xs cursor-pointer"
+          className="bg-[#046a38] hover:bg-[#02522b] text-white text-sm font-semibold px-5 py-2 rounded-full transition-colors shadow-xs cursor-pointer"
         >
           View plans
         </button>
@@ -144,10 +184,10 @@ export default function BuilderTopBar({
           className="p-1 text-gray-600 hover:text-gray-900 transition-colors rounded-full cursor-pointer"
           title="Help"
         >
-          <HelpCircle className="w-4 h-4 stroke-[2]" />
+          <HelpCircle className="w-5 h-5 stroke-[2]" />
         </button>
 
-        <div className="w-7 h-7 rounded-full bg-[#f8c8c8] text-[#4a2626] font-bold text-xs flex items-center justify-center flex-shrink-0 cursor-pointer shadow-xs">
+        <div className="w-8 h-8 rounded-full bg-[#f8c8c8] text-[#4a2626] font-bold text-sm flex items-center justify-center flex-shrink-0 cursor-pointer shadow-xs">
           KS
         </div>
       </div>

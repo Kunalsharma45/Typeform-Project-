@@ -7,11 +7,12 @@ import {
   Plus,
   Palette,
   Smartphone,
+  Play,
   Monitor,
-  Workflow,
-  Undo2,
-  Redo2,
-  SlidersHorizontal,
+  Accessibility,
+  History,
+  Languages,
+  Settings,
   Clock,
   Mic,
   Send,
@@ -356,91 +357,86 @@ export default function BuilderCenterCanvas({
   return (
     <div className="flex-1 flex flex-col bg-transparent min-w-0 relative">
       {/* Top Canvas Toolbar */}
-      <div className="bg-white border-b border-gray-200/80 px-6 py-2.5 flex items-center justify-between z-20">
-        {/* Left: Add Content Button */}
-        <button
-          onClick={onAddQuestion}
-          className="bg-[#262627] hover:bg-black text-white font-semibold text-xs py-2 px-3.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-        >
-          <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-          <span>Add content</span>
-        </button>
+      <div className="bg-transparent px-6 pt-6 pb-2 w-full z-20">
+        <div className="w-full bg-gray-50 rounded-2xl h-[48px] flex items-center px-1.5 gap-2 border border-gray-100/50">
+          {/* Left: Add Content Button */}
+          <button
+            onClick={onAddQuestion}
+            className="bg-[#262627] hover:bg-black text-white font-semibold text-[13px] py-1.5 px-3 rounded-[10px] flex items-center gap-1.5 transition-colors cursor-pointer h-[36px] shadow-sm ml-0.5"
+          >
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <span>Add content</span>
+          </button>
 
-        {/* Center: Tools (Design, Device Preview, Logic, Undo, Settings) */}
-        <div className="flex items-center gap-4 text-xs font-semibold text-gray-700">
+          <div className="w-px h-5 bg-gray-200 ml-1 mr-1" />
+
+          {/* Tools: Left-aligned right after the button */}
           <button
             onClick={showComingSoon}
-            className="flex items-center gap-1.5 hover:text-gray-900 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 hover:bg-gray-200/50 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer text-xs font-semibold text-gray-700"
           >
-            <Palette className="w-4 h-4 text-gray-600 stroke-[1.8]" />
+            <Palette className="w-4 h-4 text-gray-500 stroke-[1.8]" />
             <span>Design</span>
           </button>
 
-          <div className="w-px h-4 bg-gray-200" />
-
-          {/* Device Previews */}
-          <div className="flex items-center gap-1 bg-gray-100 p-0.5 rounded-lg">
+          <div className="flex items-center gap-0.5 ml-1">
             <button
-              onClick={() => setDeviceMode('mobile')}
-              className={`p-1 rounded-md transition-colors ${
-                deviceMode === 'mobile'
-                  ? 'bg-white text-gray-900 shadow-2xs'
-                  : 'text-gray-500 hover:text-gray-900'
-              }`}
-              title="Mobile Preview"
+              onClick={() => setDeviceMode(deviceMode === 'desktop' ? 'mobile' : 'desktop')}
+              className="p-1.5 rounded-lg transition-colors text-gray-500 hover:text-gray-900 hover:bg-gray-200/60"
+              title={deviceMode === 'desktop' ? 'Switch to mobile view' : 'Switch to desktop view'}
             >
-              <Smartphone className="w-3.5 h-3.5 stroke-[1.8]" />
+              {deviceMode === 'desktop' ? (
+                <Smartphone className="w-4 h-4 stroke-[1.8]" />
+              ) : (
+                <Monitor className="w-4 h-4 stroke-[1.8]" />
+              )}
             </button>
             <button
-              onClick={() => setDeviceMode('desktop')}
-              className={`p-1 rounded-md transition-colors ${
-                deviceMode === 'desktop'
-                  ? 'bg-white text-gray-900 shadow-2xs'
-                  : 'text-gray-500 hover:text-gray-900'
-              }`}
-              title="Desktop Preview"
+              onClick={() => {
+                if (form.public_slug) {
+                  window.open(`/f/${form.public_slug}`, '_blank');
+                } else {
+                  toast('Publish your form first to preview it!', { icon: '👁️' });
+                }
+              }}
+              className="p-1.5 rounded-lg transition-colors text-gray-500 hover:text-gray-900 hover:bg-gray-200/60"
+              title="Preview"
             >
-              <Monitor className="w-3.5 h-3.5 stroke-[1.8]" />
+              <Play className="w-4 h-4 stroke-[1.8]" />
             </button>
           </div>
 
-          <div className="w-px h-4 bg-gray-200" />
-
-          <button
-            onClick={showComingSoon}
-            className="p-1 text-gray-500 hover:text-gray-900 transition-colors"
-            title="Logic"
-          >
-            <Workflow className="w-4 h-4 stroke-[1.8]" />
-          </button>
-
-          <button
-            onClick={showComingSoon}
-            className="p-1 text-gray-500 hover:text-gray-900 transition-colors"
-            title="Undo"
-          >
-            <Undo2 className="w-4 h-4 stroke-[1.8]" />
-          </button>
-
-          <button
-            onClick={showComingSoon}
-            className="p-1 text-gray-500 hover:text-gray-900 transition-colors"
-            title="Redo"
-          >
-            <Redo2 className="w-4 h-4 stroke-[1.8]" />
-          </button>
-
-          <button
-            onClick={showComingSoon}
-            className="p-1 text-gray-500 hover:text-gray-900 transition-colors"
-            title="Settings"
-          >
-            <SlidersHorizontal className="w-4 h-4 stroke-[1.8]" />
-          </button>
+          <div className="flex items-center gap-1 ml-2">
+            <button
+              onClick={showComingSoon}
+              className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-200/60 rounded-lg transition-colors"
+              title="Accessibility"
+            >
+              <Accessibility className="w-4 h-4 stroke-[1.8]" />
+            </button>
+            <button
+              onClick={showComingSoon}
+              className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-200/60 rounded-lg transition-colors"
+              title="History"
+            >
+              <History className="w-4 h-4 stroke-[1.8]" />
+            </button>
+            <button
+              onClick={showComingSoon}
+              className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-200/60 rounded-lg transition-colors"
+              title="Languages"
+            >
+              <Languages className="w-4 h-4 stroke-[1.8]" />
+            </button>
+            <button
+              onClick={showComingSoon}
+              className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-200/60 rounded-lg transition-colors"
+              title="Settings"
+            >
+              <Settings className="w-4 h-4 stroke-[1.8]" />
+            </button>
+          </div>
         </div>
-
-        {/* Right Spacer */}
-        <div className="w-24" />
       </div>
 
       {/* Center Main Editor Canvas */}
@@ -449,7 +445,7 @@ export default function BuilderCenterCanvas({
           className={`bg-[#fafafa] rounded-[24px] transition-all duration-300 flex flex-col items-center justify-start pt-32 px-12 text-center relative ${
             deviceMode === 'mobile'
               ? 'w-[360px] min-h-[580px]'
-              : 'w-full max-w-4xl min-h-[calc(100vh-160px)]'
+              : 'w-full max-w-4xl min-h-full'
           }`}
         >
           {/* Welcome Screen Content */}

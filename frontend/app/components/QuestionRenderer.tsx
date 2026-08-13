@@ -36,6 +36,113 @@ export default function QuestionRenderer(props: QuestionRendererProps) {
   return <QuestionRendererInner key={`${props.question.id}-${props.question.type}`} {...props} />;
 }
 
+const COUNTRIES = [
+  { code: 'AF', name: 'Afghanistan', flag: '🇦🇫', dial: '+93' },
+  { code: 'US', name: 'United States', flag: '🇺🇸', dial: '+1' },
+  { code: 'UK', name: 'United Kingdom', flag: '🇬🇧', dial: '+44' },
+  { code: 'IN', name: 'India', flag: '🇮🇳', dial: '+91' },
+];
+
+function PhoneNumberRenderer({
+  question, mode, value, onChange, onSubmit, error, questionNumber, accentColor = '#6366f1',
+  focused, setFocused, handleEnter, isRespondent, inputRef
+}: any) {
+  const defaultCountryCode = getOptions(question).find((o) => o.id === 'country')?.label || 'US';
+  const [selectedCountry, setSelectedCountry] = useState(defaultCountryCode);
+  
+  // Update state when builder changes it
+  useEffect(() => {
+    setSelectedCountry(defaultCountryCode);
+  }, [defaultCountryCode]);
+
+  const currentCountry = COUNTRIES.find(c => c.code === selectedCountry) || COUNTRIES[1];
+  const accent = accentColor;
+
+  return (
+    <div className="w-full">
+      <QuestionTitle question={question} questionNumber={questionNumber} />
+      <div className="relative mt-6 flex items-center gap-4">
+        
+        {/* Country Dropdown */}
+        <div className="relative flex-shrink-0">
+          <select
+            value={selectedCountry}
+            onChange={(e) => {
+              setSelectedCountry(e.target.value);
+              if (value) {
+                const newDial = COUNTRIES.find(c => c.code === e.target.value)?.dial || '+1';
+                const currentNum = String(value).replace(/^\+\d+\s*/, '');
+                onChange?.(`${newDial} ${currentNum}`);
+              }
+            }}
+            disabled={!isRespondent}
+            className="appearance-none bg-transparent border-0 border-b-2 text-xl py-3 pl-2 pr-8 outline-none transition-all duration-200 cursor-pointer"
+            style={{
+              borderColor: focused ? accent : '#e5e7eb',
+              color: '#111827',
+              fontFamily: 'Inter, system-ui, sans-serif',
+            }}
+          >
+            {COUNTRIES.map(c => (
+              <option key={c.code} value={c.code}>
+                {c.flag} {c.dial}
+              </option>
+            ))}
+          </select>
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-sm">
+            ▼
+          </div>
+          <div
+            className="absolute bottom-0 left-0 h-0.5 transition-all duration-300"
+            style={{ width: focused ? '100%' : '0%', background: accent }}
+          />
+        </div>
+
+        {/* Number Input */}
+        <div className="relative flex-1">
+          <input
+            ref={inputRef as React.Ref<HTMLInputElement>}
+            type="tel"
+            className="w-full bg-transparent border-0 border-b-2 text-xl py-3 px-0 outline-none transition-all duration-200"
+            style={{
+              borderColor: focused ? accent : '#e5e7eb',
+              color: '#111827',
+              fontFamily: 'Inter, system-ui, sans-serif',
+            }}
+            placeholder="081234 56789"
+            value={typeof value === 'string' ? value.replace(/^\+\d+\s*/, '') : typeof value === 'number' ? String(value) : ''}
+            onChange={(e) => {
+              // Strip out any non-numeric characters (allow spaces and dashes)
+              const val = e.target.value.replace(/[^\d\s-]/g, '');
+              onChange?.(val ? `${currentCountry.dial} ${val}` : '');
+            }}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            onKeyDown={handleEnter}
+            readOnly={!isRespondent}
+          />
+          <div
+            className="absolute bottom-0 left-0 h-0.5 transition-all duration-300"
+            style={{ width: focused ? '100%' : '0%', background: accent }}
+          />
+        </div>
+      </div>
+      {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+      {isRespondent && (
+        <div className="mt-4">
+          <button
+            className="btn btn-primary btn-sm"
+            style={{ background: accent }}
+            onClick={() => onSubmit?.(value)}
+          >
+            OK <span className="opacity-70 text-xs">↵</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function QuestionRendererInner({
   question,
   mode,
@@ -132,7 +239,7 @@ function QuestionRendererInner({
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey && isRespondent) {
+              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && isRespondent) {
                 e.preventDefault();
                 onSubmit?.(value);
               }
@@ -147,7 +254,7 @@ function QuestionRendererInner({
         {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
         {isRespondent && (
           <p className="mt-2 text-sm text-gray-400">
-            Press <kbd className="px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">Shift ↵</kbd> for a new line
+            Press <kbd className="px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">↵</kbd> for a new line, or <kbd className="px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">Ctrl ↵</kbd> to submit
           </p>
         )}
         {isRespondent && (
@@ -165,47 +272,12 @@ function QuestionRendererInner({
     );
   }
 
-  // ── Number ──────────────────────────────────────────────────────────────
+  // ── Number (Phone Number) ───────────────────────────────────────────────
   if (question.type === 'number') {
     return (
-      <div className="w-full">
-        <QuestionTitle question={question} questionNumber={questionNumber} />
-        <div className="relative mt-6">
-          <input
-            ref={inputRef as React.Ref<HTMLInputElement>}
-            type="number"
-            className="w-full bg-transparent border-0 border-b-2 text-xl py-3 px-0 outline-none transition-all duration-200"
-            style={{
-              borderColor: focused ? accent : '#e5e7eb',
-              color: '#111827',
-              fontFamily: 'Inter, system-ui, sans-serif',
-            }}
-            placeholder="Enter a number..."
-            value={value !== undefined && value !== null ? String(value) : ''}
-            onChange={(e) => onChange?.(e.target.value ? Number(e.target.value) : '')}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            onKeyDown={handleEnter}
-            readOnly={!isRespondent}
-          />
-          <div
-            className="absolute bottom-0 left-0 h-0.5 transition-all duration-300"
-            style={{ width: focused ? '100%' : '0%', background: accent }}
-          />
-        </div>
-        {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
-        {isRespondent && (
-          <div className="mt-4">
-            <button
-              className="btn btn-primary btn-sm"
-              style={{ background: accent }}
-              onClick={() => onSubmit?.(value)}
-            >
-              OK <span className="opacity-70 text-xs">↵</span>
-            </button>
-          </div>
-        )}
-      </div>
+      <PhoneNumberRenderer 
+        {...{ question, mode, value, onChange, onSubmit, error, questionNumber, accentColor, focused, setFocused, handleEnter, isRespondent, inputRef }} 
+      />
     );
   }
 

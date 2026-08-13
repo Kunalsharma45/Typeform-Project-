@@ -9,7 +9,7 @@ import { useParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { api } from '../../../lib/api';
 import type { LogicMapQuestion, LogicMapResponse } from '../../../lib/types';
-import WorkflowTabs from '../../../components/workflow/WorkflowTabs';
+import BuilderTopBar from '../../../components/builder/BuilderTopBar';
 import BranchingSubTabs from '../../../components/workflow/BranchingSubTabs';
 import LogicMapCanvas from '../../../components/workflow/LogicMapCanvas';
 
@@ -60,7 +60,7 @@ export default function WorkflowPage() {
   return (
     <div className="h-screen bg-white flex flex-col overflow-hidden font-sans">
       {/* Top navigation bar */}
-      <WorkflowTabs formId={formId} formTitle={formTitle || 'Loading…'} />
+      <BuilderTopBar formId={formId} formTitle={formTitle || 'Loading…'} />
 
       {/* Branching sub-tab row */}
       <BranchingSubTabs />

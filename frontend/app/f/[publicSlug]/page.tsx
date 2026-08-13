@@ -205,7 +205,7 @@ export default function PublicFormPage() {
     api.public.getForm(slug)
       .then((f) => {
         setForm(f);
-        setFlowState(f.welcome_screen?.title || f.welcome_screen?.description ? 'welcome' : 'question');
+        setFlowState('welcome');
       })
       .catch(() => {
         setErrorMessage('This form is not available.');

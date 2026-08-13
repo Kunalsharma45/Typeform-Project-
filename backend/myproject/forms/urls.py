@@ -26,8 +26,8 @@ urlpatterns = [
     path("questions/<int:pk>/logic/<str:rule_id>/", views.QuestionLogicRuleDeleteView.as_view(), name="question-logic-rule-delete"),
 
     # ── Public: Respondent flow ─────────────────────────────────────────────
-    path("public/forms/<slug:slug>/", views.PublicFormDetailView.as_view(), name="public-form-detail"),
-    path("public/forms/<slug:slug>/start/", views.PublicFormStartView.as_view(), name="public-form-start"),
+    path("public/forms/<str:slug>/", views.PublicFormDetailView.as_view(), name="public-form-detail"),
+    path("public/forms/<str:slug>/start/", views.PublicFormStartView.as_view(), name="public-form-start"),
     path("public/responses/<int:response_id>/answer/", views.PublicResponseAnswerView.as_view(), name="public-response-answer"),
     path("public/responses/<int:response_id>/submit/", views.PublicResponseSubmitView.as_view(), name="public-response-submit"),
 ]

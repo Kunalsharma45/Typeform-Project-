@@ -367,7 +367,26 @@ export default function BuilderLeftSidebar({
           </div>
         </div>
 
-        <div className="h-2"></div>
+        {/* Resizer Handle */}
+        <div
+          className="h-3 my-1 mx-4 cursor-row-resize rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center flex-shrink-0 group"
+          onPointerDown={(e) => {
+            const startY = e.clientY;
+            const startHeight = endingsHeight;
+            const onPointerMove = (moveEvent: PointerEvent) => {
+              const delta = startY - moveEvent.clientY;
+              setEndingsHeight(Math.max(64, Math.min(startHeight + delta, 500)));
+            };
+            const onPointerUp = () => {
+              document.removeEventListener('pointermove', onPointerMove);
+              document.removeEventListener('pointerup', onPointerUp);
+            };
+            document.addEventListener('pointermove', onPointerMove);
+            document.addEventListener('pointerup', onPointerUp);
+          }}
+        >
+          <div className="w-12 h-1 bg-gray-300 group-hover:bg-gray-400 rounded-full transition-colors" />
+        </div>
 
         {/* Endings Section (Grey Box Wrapper) */}
         <div 

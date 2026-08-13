@@ -174,11 +174,11 @@ export const api = {
 
   public: {
     getForm(slug: string): Promise<Form> {
-      return request(`/api/public/forms/${slug}/`);
+      return request(`/api/public/forms/${encodeURIComponent(slug)}/`);
     },
 
     start(slug: string): Promise<{ response_id: number }> {
-      return request(`/api/public/forms/${slug}/start/`, { method: 'POST' });
+      return request(`/api/public/forms/${encodeURIComponent(slug)}/start/`, { method: 'POST' });
     },
 
     answer(

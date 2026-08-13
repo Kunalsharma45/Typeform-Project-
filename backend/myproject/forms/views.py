@@ -341,7 +341,7 @@ class PublicFormDetailView(APIView):
 
     def get(self, request, slug):
         try:
-            form = Form.objects.get(public_slug=slug, status="published")
+            form = Form.objects.get(public_slug=slug)
         except Form.DoesNotExist:
             return DRFResponse({"detail": "Form not found or not published."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -358,7 +358,7 @@ class PublicFormStartView(APIView):
 
     def post(self, request, slug):
         try:
-            form = Form.objects.get(public_slug=slug, status="published")
+            form = Form.objects.get(public_slug=slug)
         except Form.DoesNotExist:
             return DRFResponse({"detail": "Form not found or not published."}, status=status.HTTP_404_NOT_FOUND)
 
