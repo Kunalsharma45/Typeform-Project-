@@ -31,7 +31,8 @@ function validateAnswer(question: Question, value: unknown): string | null {
       if (!emailRe.test(String(value))) return 'Please enter a valid email address.';
     }
     if (question.type === 'number') {
-      if (isNaN(Number(value))) return 'Please enter a valid number.';
+      const cleanVal = String(value).replace(/[\s+-]/g, '');
+      if (isNaN(Number(cleanVal)) || cleanVal === '') return 'Please enter a valid number.';
     }
   }
 
@@ -205,13 +206,44 @@ export default function PublicFormPage() {
     api.public.getForm(slug)
       .then((f) => {
         setForm(f);
-        setFlowState('welcome');
+        try {
+          const savedStr = sessionStorage.getItem(`form-state-${slug}`);
+          if (savedStr) {
+            const saved = JSON.parse(savedStr);
+            if (saved.flowState) setFlowState(saved.flowState);
+            if (saved.questionIndex !== undefined && saved.questionIndex < f.questions.length) {
+              setQuestionIndex(saved.questionIndex);
+            }
+            if (saved.responseId) setResponseId(saved.responseId);
+            if (saved.answers) setAnswers(saved.answers);
+          } else {
+            setFlowState('welcome');
+          }
+        } catch {
+          setFlowState('welcome');
+        }
       })
       .catch(() => {
         setErrorMessage('This form is not available.');
         setFlowState('error');
       });
   }, [slug]);
+
+  // Persist state across reloads
+  useEffect(() => {
+    if (form && flowState !== 'loading' && flowState !== 'error') {
+      if (flowState === 'thankyou') {
+        sessionStorage.removeItem(`form-state-${slug}`);
+      } else {
+        sessionStorage.setItem(`form-state-${slug}`, JSON.stringify({
+          flowState,
+          questionIndex,
+          responseId,
+          answers
+        }));
+      }
+    }
+  }, [slug, form, flowState, questionIndex, responseId, answers]);
 
   // Start response on welcome screen or immediately
   useEffect(() => {

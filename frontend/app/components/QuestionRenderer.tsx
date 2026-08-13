@@ -113,7 +113,15 @@ function PhoneNumberRenderer({
             value={typeof value === 'string' ? value.replace(/^\+\d+\s*/, '') : typeof value === 'number' ? String(value) : ''}
             onChange={(e) => {
               // Strip out any non-numeric characters (allow spaces and dashes)
-              const val = e.target.value.replace(/[^\d\s-]/g, '');
+              let val = e.target.value.replace(/[^\d\s-]/g, '');
+              // Strip spaces and dashes for length counting
+              const digitCount = val.replace(/[\s-]/g, '').length;
+              if (digitCount > 10) {
+                // If they paste or type more than 10 digits, slice it
+                const stripped = val.replace(/[\s-]/g, '').slice(0, 10);
+                // We'll just set it to the stripped version without spaces for simplicity if it exceeds
+                val = stripped;
+              }
               onChange?.(val ? `${currentCountry.dial} ${val}` : '');
             }}
             onFocus={() => setFocused(true)}
