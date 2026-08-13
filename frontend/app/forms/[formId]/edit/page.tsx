@@ -17,7 +17,7 @@ const QUESTION_TYPES: { type: QuestionType; label: string; icon: string; desc: s
   { type: 'multiple_choice', label: 'Multiple Choice', icon: '○', desc: 'Select one option' },
   { type: 'dropdown', label: 'Dropdown', icon: '▾', desc: 'Pick from a list' },
   { type: 'email', label: 'Email', icon: '@', desc: 'Email address' },
-  { type: 'number', label: 'Number', icon: '#', desc: 'Numeric input' },
+  { type: 'number', label: 'Phone Number', icon: '📞', desc: 'Numeric input' },
   { type: 'yes_no', label: 'Yes / No', icon: '?', desc: 'Binary choice' },
   { type: 'rating', label: 'Rating', icon: '★', desc: 'Numeric rating scale' },
   { type: 'file_upload', label: 'File Upload', icon: '↑', desc: 'File attachment' },
@@ -40,7 +40,7 @@ export default function BuilderPage() {
   const formId = Number(params.formId);
 
   const [form, setForm] = useState<Form | null>(null);
-  const [activeItem, setActiveItem] = useState<'welcome' | 'thankyou' | number>('welcome');
+  const [activeItem, setActiveItem] = useState<'welcome' | number | string>('welcome');
   const [showTypePicker, setShowTypePicker] = useState(false);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -180,6 +180,26 @@ export default function BuilderPage() {
     }
   };
 
+  const handleReorderQuestions = async (newQuestions: Question[]) => {
+    // Optimistic update
+    setForm((prev) => (prev ? { ...prev, questions: newQuestions } : prev));
+    
+    // Format for API
+    const items = newQuestions.map((q, idx) => ({
+      id: q.id,
+      order_index: idx,
+    }));
+    
+    try {
+      await api.questions.reorder(formId, items);
+    } catch {
+      toast.error('Failed to save question order');
+      // Revert on failure by refetching form
+      const f = await api.forms.get(formId);
+      setForm(f);
+    }
+  };
+
   if (!form) {
     return (
       <div className="h-screen bg-white flex items-center justify-center">
@@ -209,10 +229,11 @@ export default function BuilderPage() {
           questions={form.questions}
           activeItem={activeItem}
           onSelectWelcome={() => setActiveItem('welcome')}
-          onSelectThankYou={() => setActiveItem('thankyou')}
+          onSelectEnding={(id) => setActiveItem(id)}
           onSelectQuestion={(id) => setActiveItem(id)}
           onAddQuestion={() => setShowTypePicker(true)}
           onDeleteQuestion={handleDeleteQuestion}
+          onReorderQuestions={handleReorderQuestions}
         />
 
         {/* Column 2: Center Editor Canvas */}

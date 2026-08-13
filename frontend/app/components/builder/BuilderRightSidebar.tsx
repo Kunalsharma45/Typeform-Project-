@@ -9,23 +9,39 @@ import {
   Plus,
   MessageSquare,
   Sparkles,
+  AlignLeft,
+  Video,
+  Phone,
+  Type,
+  List,
+  Mail,
+  ToggleLeft,
+  Star,
+  Upload,
 } from 'lucide-react';
 
-const QUESTION_TYPES: { type: QuestionType; label: string }[] = [
-  { type: 'short_text', label: 'Short Text' },
-  { type: 'long_text', label: 'Long Text' },
-  { type: 'multiple_choice', label: 'Multiple Choice' },
-  { type: 'dropdown', label: 'Dropdown' },
-  { type: 'email', label: 'Email' },
-  { type: 'number', label: 'Number' },
-  { type: 'yes_no', label: 'Yes / No' },
-  { type: 'rating', label: 'Rating' },
-  { type: 'file_upload', label: 'File Upload' },
+const QUESTION_TYPES: { type: QuestionType; label: string; icon: React.ReactNode; color: string }[] = [
+  { type: 'short_text', label: 'Short Text', icon: <Type className="w-3.5 h-3.5" />, color: 'bg-indigo-100 text-indigo-600' },
+  { type: 'long_text', label: 'Long Text', icon: <AlignLeft className="w-3.5 h-3.5" />, color: 'bg-purple-100 text-purple-600' },
+  { type: 'multiple_choice', label: 'Multiple Choice', icon: <List className="w-3.5 h-3.5" />, color: 'bg-pink-100 text-pink-600' },
+  { type: 'dropdown', label: 'Dropdown', icon: <ChevronDown className="w-3.5 h-3.5" />, color: 'bg-orange-100 text-orange-600' },
+  { type: 'email', label: 'Email', icon: <Mail className="w-3.5 h-3.5" />, color: 'bg-emerald-100 text-emerald-600' },
+  { type: 'number', label: 'Phone Number', icon: <Phone className="w-3.5 h-3.5" />, color: 'bg-pink-100 text-pink-600' },
+  { type: 'yes_no', label: 'Yes / No', icon: <ToggleLeft className="w-3.5 h-3.5" />, color: 'bg-teal-100 text-teal-600' },
+  { type: 'rating', label: 'Rating', icon: <Star className="w-3.5 h-3.5" />, color: 'bg-orange-100 text-orange-600' },
+  { type: 'file_upload', label: 'File Upload', icon: <Upload className="w-3.5 h-3.5" />, color: 'bg-slate-100 text-slate-600' },
+];
+
+const COUNTRIES = [
+  { code: 'AF', name: 'Afghanistan', flag: '🇦🇫' },
+  { code: 'US', name: 'United States', flag: '🇺🇸' },
+  { code: 'UK', name: 'United Kingdom', flag: 'UK' },
+  { code: 'IN', name: 'India', flag: '🇮🇳' },
 ];
 
 interface BuilderRightSidebarProps {
   form: Form;
-  activeItem: 'welcome' | 'thankyou' | number;
+  activeItem: 'welcome' | number | string;
   selectedQuestion: Question | null;
   onUpdateWelcome: (welcome: Partial<Form['welcome_screen']>) => void;
   onUpdateQuestion: (updates: Partial<Question>) => void;
@@ -42,6 +58,12 @@ export default function BuilderRightSidebar({
 }: BuilderRightSidebarProps) {
   const [timeToCompleteToggle, setTimeToCompleteToggle] = useState(false);
   const [numSubmissionsToggle, setNumSubmissionsToggle] = useState(false);
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const [maxCharsToggle, setMaxCharsToggle] = useState(false);
+  const [answerValidationToggle, setAnswerValidationToggle] = useState(false);
+  const [customPlaceholderToggle, setCustomPlaceholderToggle] = useState(false);
+  const [mapToContactsToggle, setMapToContactsToggle] = useState(false);
 
   const showComingSoon = () => {
     toast('Coming soon', { icon: '🚧' });
@@ -51,79 +73,64 @@ export default function BuilderRightSidebar({
   const thankyou = form.thankyou_screen || {};
   const buttonVal = welcome.button_text ?? 'Start';
 
-  const getItemLabel = () => {
-    if (activeItem === 'welcome') return 'Welcome Screen';
-    if (activeItem === 'thankyou') return 'Thank You Screen';
-    if (selectedQuestion) {
-      const idx = form.questions.findIndex((q) => q.id === selectedQuestion.id);
-      return `Question ${idx + 1}`;
-    }
-    return 'Settings';
+  const getSelectedCountry = () => {
+    if (!selectedQuestion) return COUNTRIES[0];
+    const opts = Array.isArray(selectedQuestion.options) ? selectedQuestion.options : [];
+    const countryCode = opts.find((o: any) => o.id === 'country')?.label || 'AF';
+    return COUNTRIES.find(c => c.code === countryCode) || COUNTRIES[0];
   };
 
   return (
-    <aside className="w-[280px] min-w-[280px] bg-white border-l border-gray-200/80 flex flex-col justify-between p-5 h-[calc(100vh-53px)] overflow-y-auto relative">
+    <aside className="w-[280px] min-w-[280px] flex flex-col gap-4 pr-6 py-6 h-[calc(100vh-53px)] overflow-y-auto relative no-scrollbar">
       <div className="space-y-6">
-        {/* Top Dropdown Selector */}
-        <button
-          onClick={showComingSoon}
-          className="w-full border border-gray-200 hover:border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 flex items-center justify-between transition-colors cursor-pointer shadow-2xs"
-        >
-          <span>{getItemLabel()}</span>
-          <ChevronDown className="w-4 h-4 text-gray-500" />
-        </button>
 
         {/* ── Welcome Screen Settings ─────────────────────────────────── */}
         {activeItem === 'welcome' && (
-          <div className="space-y-5">
+          <div className="space-y-6">
             {/* Toggle: Time to complete */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
+              <div className="flex items-center gap-1.5 text-[13px] font-semibold text-gray-700">
                 <span>Time to complete</span>
-                <HelpCircle className="w-3.5 h-3.5 text-gray-400" />
+                <HelpCircle className="w-4 h-4 text-gray-400" />
               </div>
               <button
                 onClick={() => setTimeToCompleteToggle(!timeToCompleteToggle)}
-                className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
-                  timeToCompleteToggle ? 'bg-gray-900' : 'bg-gray-200'
-                }`}
+                className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${timeToCompleteToggle ? 'bg-gray-900' : 'bg-gray-200'
+                  }`}
               >
                 <div
-                  className={`w-4 h-4 bg-white rounded-full transition-transform absolute top-0.5 left-0.5 ${
-                    timeToCompleteToggle ? 'translate-x-4' : 'translate-x-0'
-                  }`}
+                  className={`w-4 h-4 bg-white rounded-full transition-transform absolute top-0.5 left-0.5 ${timeToCompleteToggle ? 'translate-x-4' : 'translate-x-0'
+                    }`}
                 />
               </button>
             </div>
 
             {/* Toggle: Number of submissions */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
+              <div className="flex items-center gap-1.5 text-[13px] font-semibold text-gray-700">
                 <span>Number of submissions</span>
-                <HelpCircle className="w-3.5 h-3.5 text-gray-400" />
+                <HelpCircle className="w-4 h-4 text-gray-400" />
               </div>
               <button
                 onClick={() => setNumSubmissionsToggle(!numSubmissionsToggle)}
-                className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
-                  numSubmissionsToggle ? 'bg-gray-900' : 'bg-gray-200'
-                }`}
+                className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${numSubmissionsToggle ? 'bg-gray-900' : 'bg-gray-200'
+                  }`}
               >
                 <div
-                  className={`w-4 h-4 bg-white rounded-full transition-transform absolute top-0.5 left-0.5 ${
-                    numSubmissionsToggle ? 'translate-x-4' : 'translate-x-0'
-                  }`}
+                  className={`w-4 h-4 bg-white rounded-full transition-transform absolute top-0.5 left-0.5 ${numSubmissionsToggle ? 'translate-x-4' : 'translate-x-0'
+                    }`}
                 />
               </button>
             </div>
 
             {/* Button Text Input */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-gray-700">
+            <div className="space-y-2">
+              <label className="block text-[13px] font-semibold text-gray-700">
                 Button
               </label>
               <input
                 type="text"
-                className="w-full bg-gray-50 border border-gray-200 focus:bg-white focus:border-black rounded-xl px-3 py-2 text-xs font-medium outline-none transition-all"
+                className="w-full bg-white border border-gray-200 focus:border-black rounded-lg px-3 py-2 text-sm font-medium outline-none transition-all"
                 value={buttonVal}
                 onChange={(e) => onUpdateWelcome({ button_text: e.target.value })}
                 maxLength={24}
@@ -134,15 +141,15 @@ export default function BuilderRightSidebar({
             </div>
 
             {/* Media Upload Box */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-gray-700">
+            <div className="space-y-2">
+              <label className="block text-[13px] font-semibold text-gray-700">
                 Image or video
               </label>
               <div
                 onClick={showComingSoon}
-                className="w-12 h-12 rounded-xl border border-gray-200 hover:border-gray-400 bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-500 cursor-pointer transition-all"
+                className="w-10 h-10 rounded-xl border border-gray-200 hover:border-gray-400 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-500 cursor-pointer transition-all shadow-sm"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-5 h-5" />
               </div>
             </div>
           </div>
@@ -150,75 +157,252 @@ export default function BuilderRightSidebar({
 
         {/* ── Question Settings ───────────────────────────────────────── */}
         {typeof activeItem === 'number' && selectedQuestion && (
-          <div className="space-y-5">
-            {/* Question Type Selector */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-gray-700">
-                Question type
-              </label>
-              <select
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold text-gray-900 outline-none cursor-pointer"
-                value={selectedQuestion.type}
-                onChange={(e) =>
-                  onUpdateQuestion({ type: e.target.value as QuestionType })
-                }
-              >
-                {QUESTION_TYPES.map((t) => (
-                  <option key={t.type} value={t.type}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
+          <div className="space-y-4 pb-4">
+
+            {/* Box 1: Question */}
+            <div className="bg-[#f7f7f7] rounded-2xl p-4 space-y-3">
+              <div className="flex items-center gap-1.5 text-sm font-bold text-gray-800">
+                <span>Question</span>
+                <HelpCircle className="w-4 h-4 text-gray-400" />
+              </div>
+              <div className="flex items-center bg-gray-200/50 p-1 rounded-xl">
+                <button className="flex-1 flex items-center justify-center gap-2 py-1.5 bg-white rounded-lg shadow-sm text-sm font-medium text-gray-700 transition-all">
+                  <AlignLeft className="w-4 h-4 text-gray-500" />
+                  Text
+                </button>
+                <button onClick={showComingSoon} className="flex-1 flex items-center justify-center gap-2 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors">
+                  <Video className="w-4 h-4" />
+                  Video
+                </button>
+              </div>
             </div>
 
-            {/* Required Toggle */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-700">
-                Required
-              </span>
-              <button
-                onClick={() =>
-                  onUpdateQuestion({ required: !selectedQuestion.required })
-                }
-                className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
-                  selectedQuestion.required ? 'bg-gray-900' : 'bg-gray-200'
-                }`}
+            {/* Box 2: Answer */}
+            <div className="bg-[#f7f7f7] rounded-2xl p-4 space-y-4">
+              <div className="text-sm font-bold text-gray-800 mb-2">
+                Answer
+              </div>
+
+              {/* Custom Dropdown for Question Type */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setShowTypeDropdown(!showTypeDropdown);
+                    setShowCountryDropdown(false);
+                  }}
+                  className="w-full bg-white border border-gray-200 hover:border-gray-300 rounded-xl px-3 py-2 flex items-center justify-between transition-colors shadow-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    {(() => {
+                      const currentType = QUESTION_TYPES.find(t => t.type === selectedQuestion.type);
+                      if (!currentType) return null;
+                      return (
+                        <>
+                          <div className={`w-6 h-6 rounded flex items-center justify-center ${currentType.color}`}>
+                            {currentType.icon}
+                          </div>
+                          <span className="text-xs font-medium text-gray-700">{currentType.label}</span>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                </button>
+                {showTypeDropdown && (
+                  <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl z-[9999] py-1 overflow-hidden">
+                    {QUESTION_TYPES.map((t) => (
+                      <button
+                        key={t.type}
+                        onClick={() => {
+                          onUpdateQuestion({ type: t.type });
+                          setShowTypeDropdown(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors text-left"
+                      >
+                        <div className={`w-6 h-6 rounded flex items-center justify-center ${t.color}`}>
+                          {t.icon}
+                        </div>
+                        <span className="text-xs font-medium text-gray-700">{t.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Required Toggle */}
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] text-gray-700">Required</span>
+                <button
+                  onClick={() =>
+                    onUpdateQuestion({ required: !selectedQuestion.required })
+                  }
+                  className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shadow-sm ${selectedQuestion.required ? 'bg-gray-900' : 'bg-gray-200'
+                    }`}
+                >
+                  <div
+                    className={`w-4 h-4 bg-white rounded-full transition-transform absolute top-0.5 left-0.5 shadow-sm ${selectedQuestion.required ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                  />
+                </button>
+              </div>
+
+              {/* Extra Settings for Phone Number */}
+              {selectedQuestion.type === 'number' && (
+                <>
+                  <div className="relative">
+                    <button
+                      onClick={() => {
+                        setShowCountryDropdown(!showCountryDropdown);
+                        setShowTypeDropdown(false);
+                      }}
+                      className="w-full bg-white border border-gray-200 hover:border-gray-300 rounded-xl px-3 py-2 flex items-center justify-between transition-colors shadow-sm"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{getSelectedCountry().flag}</span>
+                        <span className="text-xs font-medium text-gray-700">{getSelectedCountry().name}</span>
+                      </div>
+                      <ChevronDown className="w-4 h-4 text-gray-400" />
+                    </button>
+                    {showCountryDropdown && (
+                      <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl z-[9999] py-1 overflow-hidden">
+                        {COUNTRIES.map((c) => (
+                          <button
+                            key={c.code}
+                            onClick={() => {
+                              onUpdateQuestion({ options: [{ id: 'country', label: c.code }] });
+                              setShowCountryDropdown(false);
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors text-left"
+                          >
+                            <span className="text-sm">{c.flag}</span>
+                            <span className="text-xs font-medium text-gray-700">{c.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                </>
+              )}
+
+              {/* Extra Settings for Short Text */}
+              {selectedQuestion.type === 'short_text' && (
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[13px] text-gray-700">Max characters</span>
+                    <button
+                      onClick={() => setMaxCharsToggle(!maxCharsToggle)}
+                      className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shadow-sm ${
+                        maxCharsToggle ? 'bg-gray-900' : 'bg-gray-200'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 bg-white rounded-full transition-transform absolute top-0.5 left-0.5 shadow-sm ${
+                        maxCharsToggle ? 'translate-x-4' : 'translate-x-0'
+                      }`} />
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[13px] text-gray-700">
+                      <span>Answer validation</span>
+                      <HelpCircle className="w-4 h-4 text-gray-400" />
+                    </div>
+                    <button
+                      onClick={() => setAnswerValidationToggle(!answerValidationToggle)}
+                      className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shadow-sm ${
+                        answerValidationToggle ? 'bg-gray-900' : 'bg-gray-200'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 bg-white rounded-full transition-transform absolute top-0.5 left-0.5 shadow-sm ${
+                        answerValidationToggle ? 'translate-x-4' : 'translate-x-0'
+                      }`} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[13px] text-gray-700">
+                      <span>Custom placeholder text</span>
+                      <HelpCircle className="w-4 h-4 text-gray-400" />
+                    </div>
+                    <button
+                      onClick={() => setCustomPlaceholderToggle(!customPlaceholderToggle)}
+                      className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shadow-sm ${
+                        customPlaceholderToggle ? 'bg-gray-900' : 'bg-gray-200'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 bg-white rounded-full transition-transform absolute top-0.5 left-0.5 shadow-sm ${
+                        customPlaceholderToggle ? 'translate-x-4' : 'translate-x-0'
+                      }`} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[13px] text-gray-700">
+                      <span>Map to contacts</span>
+                      <HelpCircle className="w-4 h-4 text-gray-400" />
+                    </div>
+                    <button
+                      onClick={() => setMapToContactsToggle(!mapToContactsToggle)}
+                      className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shadow-sm ${
+                        mapToContactsToggle ? 'bg-gray-900' : 'bg-gray-200'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 bg-white rounded-full transition-transform absolute top-0.5 left-0.5 shadow-sm ${
+                        mapToContactsToggle ? 'translate-x-4' : 'translate-x-0'
+                      }`} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+
+              {/* Universal Setting for all Question Types within Answer Box */}
+              <div className="pt-2 border-t border-gray-200/50 mt-4">
+                <div className="flex items-center justify-between pt-2">
+                  <span className="text-sm font-bold text-gray-800">Image or video</span>
+                  <button 
+                    onClick={showComingSoon}
+                    className="w-8 h-8 flex items-center justify-center border border-gray-200 bg-white rounded-lg text-gray-500 hover:bg-gray-50 shadow-sm"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Box 3: Branching */}
+            <div className="bg-[#f7f7f7] rounded-2xl p-4 flex items-center justify-between">
+              <span className="text-sm font-bold text-gray-800">Branching</span>
+              <button 
+                onClick={showComingSoon}
+                className="w-8 h-8 flex items-center justify-center border border-gray-200 bg-white rounded-lg text-gray-500 hover:bg-gray-50 shadow-sm"
               >
-                <div
-                  className={`w-4 h-4 bg-white rounded-full transition-transform absolute top-0.5 left-0.5 ${
-                    selectedQuestion.required
-                      ? 'translate-x-4'
-                      : 'translate-x-0'
-                  }`}
-                />
+                <Plus className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Image or Video Dropzone */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-gray-700">
-                Image or video
-              </label>
-              <div
-                onClick={showComingSoon}
-                className="w-12 h-12 rounded-xl border border-gray-200 hover:border-gray-400 bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-500 cursor-pointer transition-all"
-              >
-                <Plus className="w-4 h-4" />
-              </div>
+            {/* Box 4: Comments */}
+            <div className="bg-[#f7f7f7] rounded-2xl p-4 flex items-center justify-between">
+              <span className="text-sm font-bold text-gray-800">Comments</span>
+              <button onClick={showComingSoon} className="w-8 h-8 flex items-center justify-center border border-emerald-200 bg-white rounded-full shadow-sm text-emerald-600 hover:bg-emerald-50 transition-colors">
+                <Sparkles className="w-4 h-4" />
+              </button>
             </div>
+
           </div>
         )}
 
         {/* ── Thank You Screen Settings ───────────────────────────────── */}
-        {activeItem === 'thankyou' && (
-          <div className="space-y-5">
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-gray-700">
+        {typeof activeItem === 'string' && activeItem.startsWith('thankyou') && (
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <label className="block text-[13px] font-semibold text-gray-700">
                 Title
               </label>
               <input
                 type="text"
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium outline-none"
+                className="w-full bg-white border border-gray-200 focus:border-black rounded-lg px-3 py-2 text-sm font-medium outline-none transition-all"
                 value={thankyou.title || ''}
                 onChange={(e) => onUpdateThankYou({ title: e.target.value })}
               />
@@ -227,17 +411,7 @@ export default function BuilderRightSidebar({
         )}
       </div>
 
-      {/* Bottom Anchor: Comments Button */}
-      <div className="pt-4 border-t border-gray-100 mt-auto flex justify-start">
-        <button
-          onClick={showComingSoon}
-          className="border border-gray-200 hover:border-gray-300 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 hover:bg-gray-50 transition-colors cursor-pointer"
-        >
-          <MessageSquare className="w-3.5 h-3.5 text-gray-600" />
-          <span>Comments</span>
-          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-        </button>
-      </div>
+
     </aside>
   );
 }
