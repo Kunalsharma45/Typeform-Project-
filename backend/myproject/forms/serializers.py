@@ -25,17 +25,21 @@ class QuestionSerializer(serializers.ModelSerializer):
 class FormListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for the dashboard list view."""
     response_count = serializers.SerializerMethodField()
+    completed_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Form
         fields = [
             "id", "title", "description", "status", "public_slug",
-            "theme", "response_count", "created_at", "updated_at",
+            "theme", "response_count", "completed_count", "created_at", "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
 
     def get_response_count(self, obj):
         return obj.responses.count()
+
+    def get_completed_count(self, obj):
+        return obj.responses.filter(status="completed").count()
 
 
 class FormDetailSerializer(serializers.ModelSerializer):

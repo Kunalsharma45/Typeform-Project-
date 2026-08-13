@@ -77,6 +77,7 @@ export interface FormListItem {
   public_slug: string | null;
   theme: FormTheme;
   response_count: number;
+  completed_count?: number;
   created_at: string;
   updated_at: string;
 }

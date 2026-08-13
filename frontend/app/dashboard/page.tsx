@@ -1,177 +1,44 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { api } from '../lib/api';
 import type { FormListItem } from '../lib/types';
 import Modal from '../components/Modal';
-
-// ── Question type icons ────────────────────────────────────────────────────
-const PlusIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-    <path d="M12 5v14M5 12h14" />
-  </svg>
-);
-
-const EditIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const CopyIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const TrashIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" strokeLinecap="round" strokeLinejoin="round" /><path d="M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const ChartIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <line x1="18" y1="20" x2="18" y2="10" strokeLinecap="round" /><line x1="12" y1="20" x2="12" y2="4" strokeLinecap="round" /><line x1="6" y1="20" x2="6" y2="14" strokeLinecap="round" />
-  </svg>
-);
-
-const EyeIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" strokeLinecap="round" strokeLinejoin="round" />
-    <circle cx="12" cy="12" r="3" />
-  </svg>
-);
-
-function FormCard({
-  form,
-  onEdit,
-  onDuplicate,
-  onDelete,
-  onPublishToggle,
-  onResults,
-  onPreview,
-}: {
-  form: FormListItem;
-  onEdit: () => void;
-  onDuplicate: () => void;
-  onDelete: () => void;
-  onPublishToggle: () => void;
-  onResults: () => void;
-  onPreview: () => void;
-}) {
-  const accent = form.theme?.accent_color || '#6366f1';
-  const isPublished = form.status === 'published';
-
-  return (
-    <div
-      className="card group hover:shadow-lg transition-all duration-200 flex flex-col overflow-hidden cursor-pointer"
-      style={{ borderRadius: '16px' }}
-      onClick={onEdit}
-    >
-      {/* Coloured top accent bar */}
-      <div className="h-1.5 w-full" style={{ background: accent }} />
-
-      <div className="p-5 flex flex-col flex-1 gap-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-gray-900 text-base leading-snug truncate">
-              {form.title}
-            </h3>
-            <p className="text-xs text-gray-400 mt-0.5 truncate">
-              {form.description || 'No description'}
-            </p>
-          </div>
-          <span className={`badge flex-shrink-0 ${isPublished ? 'badge-published' : 'badge-draft'}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${isPublished ? 'bg-green-500' : 'bg-gray-400'}`} />
-            {isPublished ? 'Published' : 'Draft'}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-4 text-xs text-gray-400">
-          <span className="flex items-center gap-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
-            </svg>
-            {form.response_count} response{form.response_count !== 1 ? 's' : ''}
-          </span>
-          <span>
-            {new Date(form.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-          </span>
-        </div>
-
-        {/* Actions */}
-        <div
-          className="flex items-center flex-wrap gap-1.5 pt-3 border-t border-gray-100 mt-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            id={`edit-form-${form.id}`}
-            onClick={onEdit}
-            className="btn btn-ghost btn-sm flex-1"
-            title="Edit"
-          >
-            <EditIcon /> Edit
-          </button>
-          <button
-            id={`results-form-${form.id}`}
-            onClick={onResults}
-            className="btn btn-ghost btn-sm"
-            title="Results"
-          >
-            <ChartIcon />
-          </button>
-          {isPublished && (
-            <button
-              id={`preview-form-${form.id}`}
-              onClick={onPreview}
-              className="btn btn-ghost btn-sm"
-              title="Preview"
-            >
-              <EyeIcon />
-            </button>
-          )}
-          <button
-            id={`duplicate-form-${form.id}`}
-            onClick={onDuplicate}
-            className="btn btn-ghost btn-sm"
-            title="Duplicate"
-          >
-            <CopyIcon />
-          </button>
-          <button
-            id={`publish-form-${form.id}`}
-            onClick={onPublishToggle}
-            className={`btn btn-sm flex-shrink-0 ${isPublished ? 'btn-secondary' : 'btn-primary'}`}
-            style={!isPublished ? { background: accent } : {}}
-            title={isPublished ? 'Unpublish' : 'Publish'}
-          >
-            {isPublished ? 'Unpublish' : 'Publish'}
-          </button>
-          <button
-            id={`delete-form-${form.id}`}
-            onClick={onDelete}
-            className="btn btn-ghost btn-sm text-red-400 hover:text-red-600 hover:bg-red-50"
-            title="Delete"
-          >
-            <TrashIcon />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+import TopBar from '../components/TopBar';
+import Sidebar from '../components/Sidebar';
+import AISuggestionCard from '../components/AISuggestionCard';
+import FormsTable from '../components/FormsTable';
+import {
+  MoreHorizontal,
+  UserPlus,
+  ShieldCheck,
+  ChevronDown,
+  List,
+  LayoutGrid,
+} from 'lucide-react';
 
 export default function DashboardPage() {
   const router = useRouter();
   const [forms, setForms] = useState<FormListItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Search & Sort State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'created_at' | 'updated_at'>('created_at');
+  const [isSortOpen, setIsSortOpen] = useState(false);
+
+  // Modal States
   const [creating, setCreating] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<FormListItem | null>(null);
   const [newTitle, setNewTitle] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<FormListItem | null>(null);
+  const [renameTarget, setRenameTarget] = useState<FormListItem | null>(null);
+  const [renameTitle, setRenameTitle] = useState('');
+
+  const showComingSoon = () => {
+    toast('Coming soon', { icon: '🚧' });
+  };
 
   const loadForms = useCallback(async () => {
     try {
@@ -184,8 +51,29 @@ export default function DashboardPage() {
     }
   }, []);
 
-  useEffect(() => { loadForms(); }, [loadForms]);
+  useEffect(() => {
+    loadForms();
+  }, [loadForms]);
 
+  // Calculate total responses across all forms for the sidebar widget
+  const totalResponses = useMemo(() => {
+    return forms.reduce((acc, f) => acc + (f.response_count || 0), 0);
+  }, [forms]);
+
+  // Filter and sort forms list
+  const filteredForms = useMemo(() => {
+    return forms
+      .filter((f) =>
+        f.title.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      .sort((a, b) => {
+        const dateA = new Date(a[sortBy]).getTime();
+        const dateB = new Date(b[sortBy]).getTime();
+        return dateB - dateA;
+      });
+  }, [forms, searchQuery, sortBy]);
+
+  // Handle Form Creation
   const handleCreate = async () => {
     const title = newTitle.trim() || 'Untitled Form';
     setCreating(false);
@@ -200,35 +88,56 @@ export default function DashboardPage() {
     }
   };
 
+  // Handle Form Duplication
   const handleDuplicate = async (id: number) => {
-    const toastId = toast.loading('Duplicating...');
+    const toastId = toast.loading('Duplicating form...');
     try {
       const form = await api.forms.duplicate(id);
       toast.success('Form duplicated!', { id: toastId });
       await loadForms();
       router.push(`/forms/${form.id}/edit`);
     } catch {
-      toast.error('Failed to duplicate', { id: toastId });
+      toast.error('Failed to duplicate form', { id: toastId });
     }
   };
 
+  // Handle Form Deletion
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    const toastId = toast.loading('Deleting...');
+    const toastId = toast.loading('Deleting form...');
     try {
       await api.forms.delete(deleteTarget.id);
       setDeleteTarget(null);
       toast.success('Form deleted', { id: toastId });
       await loadForms();
     } catch {
-      toast.error('Failed to delete', { id: toastId });
+      toast.error('Failed to delete form', { id: toastId });
     }
   };
 
-  const handlePublishToggle = async (form: FormListItem) => {
-    const toastId = toast.loading(form.status === 'published' ? 'Unpublishing...' : 'Publishing...');
+  // Handle Form Renaming
+  const handleRenameSubmit = async () => {
+    if (!renameTarget) return;
+    const title = renameTitle.trim() || 'Untitled Form';
+    const toastId = toast.loading('Renaming form...');
     try {
-      if (form.status === 'published') {
+      await api.forms.patch(renameTarget.id, { title });
+      setRenameTarget(null);
+      toast.success('Form renamed!', { id: toastId });
+      await loadForms();
+    } catch {
+      toast.error('Failed to rename form', { id: toastId });
+    }
+  };
+
+  // Handle Publish / Unpublish Toggle
+  const handlePublishToggle = async (form: FormListItem) => {
+    const isPublished = form.status === 'published';
+    const toastId = toast.loading(
+      isPublished ? 'Unpublishing...' : 'Publishing...'
+    );
+    try {
+      if (isPublished) {
         await api.forms.unpublish(form.id);
         toast.success('Form unpublished', { id: toastId });
       } else {
@@ -242,118 +151,204 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#f7f8fa' }}>
-      {/* Top Bar */}
-      <header
-        className="sticky top-0 z-30 border-b"
-        style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', borderColor: '#e5e7eb' }}
-      >
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
-            >
-              T
-            </div>
-            <span className="font-semibold text-gray-900 text-lg">Typeform</span>
-          </div>
-          <button
-            id="create-form-btn"
-            onClick={() => setCreating(true)}
-            className="btn btn-primary"
-            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
-          >
-            <PlusIcon />
-            Create form
-          </button>
-        </div>
-      </header>
+    <div className="min-h-screen bg-white flex flex-col font-sans">
+      {/* Shared Top Navigation Bar */}
+      <TopBar />
 
-      <main className="max-w-7xl mx-auto px-6 py-10">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">My Forms</h1>
-          <p className="text-gray-500 mt-1">
-            {forms.length === 0 ? 'No forms yet' : `${forms.length} form${forms.length !== 1 ? 's' : ''}`}
-          </p>
-        </div>
+      {/* Main Two-Column Viewport */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar */}
+        <Sidebar
+          formCount={forms.length}
+          totalResponses={totalResponses}
+          onCreateForm={() => setCreating(true)}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
 
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="card h-44 animate-pulse" style={{ background: '#f3f4f6' }} />
-            ))}
-          </div>
-        ) : forms.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
-              style={{ background: '#eef2ff' }}
-            >
-              <svg className="w-8 h-8 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+        {/* Main Content Workspace */}
+        <main className="flex-1 bg-white p-8 lg:p-10 overflow-y-auto">
+          <div className="max-w-6xl mx-auto space-y-8">
+            {/* Header Title Row & Right Controls */}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              {/* Title & Stubs */}
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight">
+                  My workspace
+                </h1>
+
+                <button
+                  onClick={showComingSoon}
+                  className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Workspace options"
+                >
+                  <MoreHorizontal className="w-5 h-5" />
+                </button>
+
+                <button
+                  onClick={showComingSoon}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 border border-gray-200 hover:bg-gray-50 rounded-lg px-2.5 py-1.5 transition-colors"
+                >
+                  <UserPlus className="w-3.5 h-3.5 text-gray-500" />
+                  Invite
+                </button>
+
+                <button
+                  onClick={showComingSoon}
+                  className="p-1 text-emerald-600 hover:text-emerald-700 transition-colors"
+                  title="Security Badge"
+                >
+                  <ShieldCheck className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Right View & Sort Controls */}
+              <div className="flex items-center gap-3">
+                {/* Sort Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsSortOpen(!isSortOpen)}
+                    className="border border-gray-200 hover:border-gray-300 rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-700 flex items-center gap-1.5 bg-white transition-colors"
+                  >
+                    <span>
+                      Date {sortBy === 'created_at' ? 'created' : 'updated'}
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
+                  </button>
+
+                  {isSortOpen && (
+                    <div className="absolute right-0 mt-1 w-36 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-20 text-xs font-medium">
+                      <button
+                        onClick={() => {
+                          setSortBy('created_at');
+                          setIsSortOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-1.5 hover:bg-gray-50 ${
+                          sortBy === 'created_at'
+                            ? 'text-black font-semibold bg-gray-50'
+                            : 'text-gray-600'
+                        }`}
+                      >
+                        Date created
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSortBy('updated_at');
+                          setIsSortOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-1.5 hover:bg-gray-50 ${
+                          sortBy === 'updated_at'
+                            ? 'text-black font-semibold bg-gray-50'
+                            : 'text-gray-600'
+                        }`}
+                      >
+                        Date updated
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* List / Grid Toggle */}
+                <div className="flex items-center p-0.5 bg-gray-100/80 rounded-lg border border-gray-200">
+                  <button
+                    className="px-2.5 py-1 text-xs font-semibold text-gray-900 bg-white rounded-md shadow-xs flex items-center gap-1"
+                    title="List view"
+                  >
+                    <List className="w-3.5 h-3.5" />
+                    List
+                  </button>
+                  <button
+                    onClick={showComingSoon}
+                    className="px-2.5 py-1 text-xs font-medium text-gray-500 hover:text-gray-900 rounded-md transition-colors flex items-center gap-1"
+                    title="Grid view"
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    Grid
+                  </button>
+                </div>
+              </div>
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Create your first form</h2>
-            <p className="text-gray-500 mb-6 max-w-sm">Build surveys, quizzes, and questionnaires with a beautiful one-question-at-a-time experience.</p>
-            <button
-              onClick={() => setCreating(true)}
-              className="btn btn-primary btn-lg"
-              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
-            >
-              <PlusIcon /> Create your first form
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {forms.map((form) => (
-              <FormCard
-                key={form.id}
-                form={form}
-                onEdit={() => router.push(`/forms/${form.id}/edit`)}
-                onDuplicate={() => handleDuplicate(form.id)}
-                onDelete={() => setDeleteTarget(form)}
-                onPublishToggle={() => handlePublishToggle(form)}
-                onResults={() => router.push(`/forms/${form.id}/results`)}
-                onPreview={() => window.open(`/f/${form.public_slug}`, '_blank')}
+
+            {/* AI Suggestion Cards Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <AISuggestionCard
+                id="card-1"
+                text="Create an Obtain informed consent from subjects before data collection for ethical compliance."
               />
-            ))}
-            {/* + New form card */}
-            <button
-              id="create-form-card"
-              onClick={() => setCreating(true)}
-              className="border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-2 h-44 transition-all duration-150 hover:border-indigo-400 hover:bg-indigo-50 text-gray-400 hover:text-indigo-500"
-              style={{ borderColor: '#d1d5db' }}
-            >
-              <PlusIcon />
-              <span className="text-sm font-medium">New form</span>
-            </button>
+              <AISuggestionCard
+                id="card-2"
+                text="Create a Gather expert opinions on recent studies to identify research gaps and trends."
+              />
+            </div>
+
+            {/* Forms Table */}
+            {loading ? (
+              <div className="space-y-3 pt-4">
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-14 bg-gray-100 rounded-xl animate-pulse"
+                  />
+                ))}
+              </div>
+            ) : (
+              <FormsTable
+                forms={filteredForms}
+                onEdit={(id) => router.push(`/forms/${id}/edit`)}
+                onDuplicate={handleDuplicate}
+                onDelete={(form) => setDeleteTarget(form)}
+                onPublishToggle={handlePublishToggle}
+                onRename={(form) => {
+                  setRenameTarget(form);
+                  setRenameTitle(form.title);
+                }}
+                onCreateForm={() => setCreating(true)}
+              />
+            )}
           </div>
-        )}
-      </main>
+        </main>
+      </div>
 
       {/* Create Form Modal */}
-      <Modal open={creating} onClose={() => { setCreating(false); setNewTitle(''); }} title="New Form">
+      <Modal
+        open={creating}
+        onClose={() => {
+          setCreating(false);
+          setNewTitle('');
+        }}
+        title="New Form"
+      >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Form title</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Form title
+            </label>
             <input
               id="new-form-title"
-              className="input"
+              className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black"
               placeholder="e.g. Customer Feedback Survey"
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleCreate();
+              }}
               autoFocus
             />
           </div>
           <div className="flex gap-3 justify-end pt-2">
-            <button onClick={() => { setCreating(false); setNewTitle(''); }} className="btn btn-secondary">Cancel</button>
+            <button
+              onClick={() => {
+                setCreating(false);
+                setNewTitle('');
+              }}
+              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
+            >
+              Cancel
+            </button>
             <button
               id="create-form-submit"
               onClick={handleCreate}
-              className="btn btn-primary"
-              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+              className="bg-[#262627] hover:bg-black text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-xs"
             >
               Create Form
             </button>
@@ -361,19 +356,69 @@ export default function DashboardPage() {
         </div>
       </Modal>
 
-      {/* Delete Confirm Modal */}
-      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete Form">
+      {/* Rename Form Modal */}
+      <Modal
+        open={!!renameTarget}
+        onClose={() => setRenameTarget(null)}
+        title="Rename Form"
+      >
         <div className="space-y-4">
-          <p className="text-gray-600">
-            Are you sure you want to delete <strong>"{deleteTarget?.title}"</strong>?
-            This will permanently delete all questions and responses. This action cannot be undone.
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              New form title
+            </label>
+            <input
+              id="rename-form-title"
+              className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black"
+              value={renameTitle}
+              onChange={(e) => setRenameTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleRenameSubmit();
+              }}
+              autoFocus
+            />
+          </div>
+          <div className="flex gap-3 justify-end pt-2">
+            <button
+              onClick={() => setRenameTarget(null)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleRenameSubmit}
+              className="bg-[#262627] hover:bg-black text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-xs"
+            >
+              Save Title
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Form Modal */}
+      <Modal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete Form"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 leading-relaxed">
+            Are you sure you want to delete{' '}
+            <strong className="text-gray-900">"{deleteTarget?.title}"</strong>?
+            This will permanently remove all questions and responses. This action
+            cannot be undone.
           </p>
-          <div className="flex gap-3 justify-end">
-            <button onClick={() => setDeleteTarget(null)} className="btn btn-secondary">Cancel</button>
+          <div className="flex gap-3 justify-end pt-2">
+            <button
+              onClick={() => setDeleteTarget(null)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
+            >
+              Cancel
+            </button>
             <button
               id="confirm-delete-btn"
               onClick={handleDelete}
-              className="btn btn-danger"
+              className="bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-xs"
             >
               Delete permanently
             </button>

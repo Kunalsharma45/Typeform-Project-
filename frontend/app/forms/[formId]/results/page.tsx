@@ -65,9 +65,9 @@ function QuestionSummaryCard({ qs, idx }: { qs: QuestionSummary; idx: number }) 
             />
             <Tooltip
               contentStyle={{ borderRadius: 8, fontSize: 13, border: '1px solid #e5e7eb' }}
-              formatter={(value: number, _: unknown, props: { payload: { fullLabel: string } }) => [
+              formatter={(value: any, _: any, props: any) => [
                 `${value} answer${value !== 1 ? 's' : ''}`,
-                props.payload.fullLabel,
+                props?.payload?.fullLabel ?? '',
               ]}
             />
             <Bar dataKey="count" radius={[0, 6, 6, 0]} maxBarSize={28}>
@@ -400,7 +400,7 @@ export default function ResultsPage() {
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y" style={{ divideColor: '#f9fafb' }}>
+                  <tbody className="divide-y divide-gray-100">
                     {responses.results.map((resp) => (
                       <ResponseRow
                         key={resp.id}
