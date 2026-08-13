@@ -21,7 +21,9 @@ from .serializers import (
     FormDetailSerializer,
     FormListSerializer,
     FormSummarySerializer,
+    LogicMapQuestionSerializer,
     PublicFormSerializer,
+    QuestionLogicUpdateSerializer,
     QuestionSerializer,
     ResponseDetailSerializer,
     ResponseListSerializer,
@@ -493,3 +495,81 @@ class PublicResponseSubmitView(APIView):
         resp.save()
 
         return DRFResponse({"status": "completed", "response_id": resp.id})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Workflow — Logic Map (Branching canvas)
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class FormLogicMapView(APIView):
+    """GET /api/forms/<form_id>/logic-map/
+    Returns all questions (id, order_index, type, title, options, logic_rules,
+    default_next_question_id, default_next_is_ending) shaped for the canvas, plus
+    a static endings list containing the thank-you screen.
+    """
+
+    def get(self, request, form_id):
+        try:
+            form = Form.objects.get(pk=form_id)
+        except Form.DoesNotExist:
+            return DRFResponse({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        questions = form.questions.all()
+        serializer = LogicMapQuestionSerializer(questions, many=True)
+
+        return DRFResponse(
+            {
+                "form_id": form.id,
+                "questions": serializer.data,
+                "endings": [{"id": "ending_default", "label": "Thank you screen"}],
+            }
+        )
+
+
+class QuestionLogicUpdateView(APIView):
+    """PATCH /api/questions/<pk>/logic/
+    Updates logic_rules and/or default_next_question_id / default_next_is_ending.
+    """
+
+    def patch(self, request, pk):
+        try:
+            question = Question.objects.get(pk=pk)
+        except Question.DoesNotExist:
+            return DRFResponse({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = QuestionLogicUpdateSerializer(
+            question, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        # Return the updated question in logic-map shape
+        return DRFResponse(LogicMapQuestionSerializer(question).data)
+
+
+class QuestionLogicRuleDeleteView(APIView):
+    """DELETE /api/questions/<pk>/logic/<rule_id>/
+    Removes a single rule from the question's logic_rules list by its id string.
+    """
+
+    def delete(self, request, pk, rule_id):
+        try:
+            question = Question.objects.get(pk=pk)
+        except Question.DoesNotExist:
+            return DRFResponse({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        original_count = len(question.logic_rules or [])
+        question.logic_rules = [
+            r for r in (question.logic_rules or []) if r.get("id") != rule_id
+        ]
+
+        if len(question.logic_rules) == original_count:
+            return DRFResponse(
+                {"detail": f"Rule '{rule_id}' not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        question.save(update_fields=["logic_rules"])
+        return DRFResponse(LogicMapQuestionSerializer(question).data)
+

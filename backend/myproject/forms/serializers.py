@@ -13,9 +13,31 @@ class QuestionSerializer(serializers.ModelSerializer):
         fields = [
             "id", "form", "type", "title", "description",
             "order_index", "required", "options", "logic",
+            "logic_rules", "default_next_question_id", "default_next_is_ending",
             "created_at", "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+
+# ──────────────────────────────────────────────
+# Logic Map (Workflow / Branching canvas)
+# ──────────────────────────────────────────────
+
+class LogicMapQuestionSerializer(serializers.ModelSerializer):
+    """Lightweight serializer for the Logic Map canvas — only fields the canvas needs."""
+    class Meta:
+        model = Question
+        fields = [
+            "id", "order_index", "type", "title", "options",
+            "logic_rules", "default_next_question_id", "default_next_is_ending",
+        ]
+
+
+class QuestionLogicUpdateSerializer(serializers.ModelSerializer):
+    """Used by PATCH /api/questions/<id>/logic/ to update branching fields only."""
+    class Meta:
+        model = Question
+        fields = ["logic_rules", "default_next_question_id", "default_next_is_ending"]
 
 
 # ──────────────────────────────────────────────

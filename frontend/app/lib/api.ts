@@ -8,6 +8,9 @@ import type {
   Form,
   FormListItem,
   FormSummary,
+  LogicMapQuestion,
+  LogicMapResponse,
+  LogicRule,
   PaginatedResponse,
   Question,
   ResponseDetail,
@@ -202,6 +205,34 @@ export const api = {
     ): Promise<{ status: string; response_id: number }> {
       return request(`/api/public/responses/${responseId}/submit/`, {
         method: 'POST',
+      });
+    },
+  },
+
+  // ─── Workflow: Logic Map (Branching canvas) ──────────────────────────────
+
+  logic: {
+    getMap(formId: number): Promise<LogicMapResponse> {
+      return request(`/api/forms/${formId}/logic-map/`);
+    },
+
+    updateQuestion(
+      questionId: number,
+      payload: {
+        logic_rules?: LogicRule[];
+        default_next_question_id?: number | null;
+        default_next_is_ending?: boolean;
+      }
+    ): Promise<LogicMapQuestion> {
+      return request(`/api/questions/${questionId}/logic/`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+    },
+
+    deleteRule(questionId: number, ruleId: string): Promise<LogicMapQuestion> {
+      return request(`/api/questions/${questionId}/logic/${ruleId}/`, {
+        method: 'DELETE',
       });
     },
   },

@@ -38,7 +38,17 @@ class Question(models.Model):
     order_index = models.PositiveIntegerField()
     required = models.BooleanField(default=False)
     options = models.JSONField(default=list, blank=True)
+
+    # Legacy single-rule branching field (kept for backward compat, not used for new rules)
     logic = models.JSONField(null=True, blank=True)
+
+    # New structured branching fields
+    # List of rule objects: [{id, condition: {operator, value}, target_question_id, target_is_ending}]
+    logic_rules = models.JSONField(default=list, blank=True)
+    # Fallback target if no rule matches. None = next question in order_index order.
+    default_next_question_id = models.IntegerField(null=True, blank=True)
+    default_next_is_ending = models.BooleanField(default=False)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -47,6 +57,33 @@ class Question(models.Model):
 
     def __str__(self):
         return f"{self.form.title} – {self.title[:50]}"
+
+    def delete(self, *args, **kwargs):
+        """
+        Before deleting this question, remove any logic_rules across sibling questions
+        that reference this question's id, and clear default_next_question_id if it pointed here.
+        """
+        deleted_id = self.id
+        siblings = Question.objects.filter(form=self.form).exclude(id=deleted_id)
+        for sibling in siblings:
+            changed = False
+            # Filter out rules whose target_question_id matches this deleted question
+            new_rules = []
+            for rule in (sibling.logic_rules or []):
+                if rule.get("target_question_id") == deleted_id:
+                    changed = True  # drop this rule
+                else:
+                    new_rules.append(rule)
+            # Clear default_next_question_id if it pointed at the deleted question
+            if sibling.default_next_question_id == deleted_id:
+                sibling.default_next_question_id = None
+                changed = True
+            if changed:
+                sibling.logic_rules = new_rules
+                sibling.save(
+                    update_fields=["logic_rules", "default_next_question_id"]
+                )
+        super().delete(*args, **kwargs)
 
 
 class Response(models.Model):

@@ -235,6 +235,44 @@ export default function PublicFormPage() {
   // Determine next question index (handles branching)
   const getNextIndex = useCallback(
     (current: Question, value: unknown): number => {
+      // ── New logic_rules format (first-match-wins) ──────────────────────
+      if (Array.isArray(current.logic_rules) && current.logic_rules.length > 0) {
+        const strVal = typeof value === 'object' && value !== null && 'selected_option_id' in (value as object)
+          ? (value as { selected_option_id: string }).selected_option_id
+          : String(value ?? '');
+
+        for (const rule of current.logic_rules) {
+          const op = rule.condition.operator;
+          const rVal = rule.condition.value !== undefined ? String(rule.condition.value) : '';
+          let matched = false;
+
+          if (op === 'equals') matched = strVal === rVal;
+          else if (op === 'not_equals') matched = strVal !== rVal;
+          else if (op === 'contains') matched = strVal.includes(rVal);
+          else if (op === 'greater_than') matched = Number(strVal) > Number(rVal);
+          else if (op === 'less_than') matched = Number(strVal) < Number(rVal);
+          else if (op === 'is_answered') matched = strVal !== '' && strVal !== 'null' && strVal !== 'undefined';
+          else if (op === 'is_empty') matched = strVal === '' || strVal === 'null' || strVal === 'undefined';
+
+          if (matched) {
+            if (rule.target_is_ending) return form!.questions.length; // → thank you
+            if (rule.target_question_id !== null) {
+              const idx = form!.questions.findIndex(q => q.id === rule.target_question_id);
+              if (idx >= 0) return idx;
+            }
+          }
+        }
+
+        // No rule matched → check default_next
+        if (current.default_next_is_ending) return form!.questions.length;
+        if (current.default_next_question_id !== null) {
+          const idx = form!.questions.findIndex(q => q.id === current.default_next_question_id);
+          if (idx >= 0) return idx;
+        }
+        return questionIndex + 1;
+      }
+
+      // ── Legacy logic field fallback ────────────────────────────────────
       if (current.logic?.if_option_id && current.logic?.goto_question_id !== undefined) {
         let selectedId: string | null = null;
         if (typeof value === 'object' && value !== null && 'selected_option_id' in (value as object)) {
@@ -253,6 +291,7 @@ export default function PublicFormPage() {
     },
     [form, questionIndex]
   );
+
 
   const advanceToNext = useCallback(
     async (value: unknown) => {

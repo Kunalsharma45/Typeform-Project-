@@ -20,9 +20,15 @@ urlpatterns = [
     path("forms/<int:form_id>/summary/", views.FormSummaryView.as_view(), name="form-summary"),
     path("responses/<int:pk>/", views.ResponseDetailView.as_view(), name="response-detail"),
 
+    # ── Workflow: Logic Map (Branching canvas) ──────────────────────────────
+    path("forms/<int:form_id>/logic-map/", views.FormLogicMapView.as_view(), name="form-logic-map"),
+    path("questions/<int:pk>/logic/", views.QuestionLogicUpdateView.as_view(), name="question-logic-update"),
+    path("questions/<int:pk>/logic/<str:rule_id>/", views.QuestionLogicRuleDeleteView.as_view(), name="question-logic-rule-delete"),
+
     # ── Public: Respondent flow ─────────────────────────────────────────────
     path("public/forms/<slug:slug>/", views.PublicFormDetailView.as_view(), name="public-form-detail"),
     path("public/forms/<slug:slug>/start/", views.PublicFormStartView.as_view(), name="public-form-start"),
     path("public/responses/<int:response_id>/answer/", views.PublicResponseAnswerView.as_view(), name="public-response-answer"),
     path("public/responses/<int:response_id>/submit/", views.PublicResponseSubmitView.as_view(), name="public-response-submit"),
 ]
+

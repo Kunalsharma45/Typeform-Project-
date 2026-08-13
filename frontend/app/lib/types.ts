@@ -16,6 +16,45 @@ export interface QuestionOption {
   label: string;
 }
 
+// ── Logic / Branching types ───────────────────────────────────────────────
+
+export type LogicOperator =
+  | 'equals'
+  | 'not_equals'
+  | 'contains'
+  | 'greater_than'
+  | 'less_than'
+  | 'is_answered'
+  | 'is_empty';
+
+export interface LogicRule {
+  id: string;
+  condition: {
+    operator: LogicOperator;
+    value?: string | number;
+  };
+  target_question_id: number | null;
+  target_is_ending: boolean;
+}
+
+export interface LogicMapQuestion {
+  id: number;
+  order_index: number;
+  type: QuestionType;
+  title: string;
+  options?: QuestionOption[];
+  logic_rules: LogicRule[];
+  default_next_question_id: number | null;
+  default_next_is_ending: boolean;
+}
+
+export interface LogicMapResponse {
+  form_id: number;
+  questions: LogicMapQuestion[];
+  endings: { id: string; label: string }[];
+}
+
+// Legacy single-rule branching (kept for backward compat in respondent flow)
 export interface QuestionLogic {
   if_option_id: string;
   goto_question_id: number;
@@ -31,6 +70,9 @@ export interface Question {
   required: boolean;
   options: QuestionOption[] | { max: number } | [];
   logic: QuestionLogic | null;
+  logic_rules: LogicRule[];
+  default_next_question_id: number | null;
+  default_next_is_ending: boolean;
   created_at: string;
   updated_at: string;
 }
