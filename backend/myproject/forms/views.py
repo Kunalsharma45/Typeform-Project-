@@ -97,6 +97,9 @@ class FormDuplicateView(APIView):
                     required=q.required,
                     options=q.options,
                     logic=q.logic,
+                    logic_rules=q.logic_rules,
+                    default_next_question_id=q.default_next_question_id,
+                    default_next_is_ending=q.default_next_is_ending,
                 )
 
         serializer = FormDetailSerializer(new_form, context={"request": request})

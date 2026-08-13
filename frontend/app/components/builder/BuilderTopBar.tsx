@@ -47,8 +47,9 @@ export default function BuilderTopBar({
   let activeTab = 'Content';
   if (pathname?.includes('/workflow')) activeTab = 'Workflow';
   if (pathname?.includes('/connect')) activeTab = 'Connect';
+  if (pathname?.includes('/results')) activeTab = 'Results';
 
-  const tabs = ['Content', 'Workflow', 'Connect'];
+  const tabs = ['Content', 'Workflow', 'Connect', 'Results'];
 
   const showComingSoon = () => {
     toast('Coming soon', { icon: '🚧' });
@@ -123,6 +124,7 @@ export default function BuilderTopBar({
                 if (tab === 'Content') router.push(`/forms/${formId}/edit`);
                 if (tab === 'Workflow') router.push(`/forms/${formId}/workflow`);
                 if (tab === 'Connect') showComingSoon();
+                if (tab === 'Results') router.push(`/forms/${formId}/results`);
               }}
               className={`relative px-4 py-1.5 transition-colors z-10 cursor-pointer ${
                 isActive ? 'text-gray-900 font-bold' : 'text-gray-500 hover:text-gray-900'

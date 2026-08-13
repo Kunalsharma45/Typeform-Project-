@@ -4,17 +4,29 @@ import { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type { LogicMapQuestion } from '../../lib/types';
 
+import {
+  Type,
+  AlignLeft,
+  List,
+  ChevronDown,
+  Mail,
+  Phone,
+  ToggleLeft,
+  Star,
+  Upload,
+} from 'lucide-react';
+
 // Reuse the same type icon colors defined in globals.css as CSS variables
-const TYPE_CONFIG: Record<string, { icon: string; color: string }> = {
-  short_text:      { icon: 'T',  color: '#6366f1' },
-  long_text:       { icon: '¶',  color: '#8b5cf6' },
-  multiple_choice: { icon: '○',  color: '#ec4899' },
-  dropdown:        { icon: '▾',  color: '#f59e0b' },
-  email:           { icon: '@',  color: '#10b981' },
-  number:          { icon: '#',  color: '#3b82f6' },
-  yes_no:          { icon: '?',  color: '#14b8a6' },
-  rating:          { icon: '★',  color: '#f97316' },
-  file_upload:     { icon: '↑',  color: '#64748b' },
+const TYPE_CONFIG: Record<string, { icon: React.ReactNode; color: string }> = {
+  short_text:      { icon: <Type className="w-3.5 h-3.5" />,  color: '#6366f1' },
+  long_text:       { icon: <AlignLeft className="w-3.5 h-3.5" />,  color: '#8b5cf6' },
+  multiple_choice: { icon: <List className="w-3.5 h-3.5" />,  color: '#ec4899' },
+  dropdown:        { icon: <ChevronDown className="w-3.5 h-3.5" />,  color: '#f59e0b' },
+  email:           { icon: <Mail className="w-3.5 h-3.5" />,  color: '#10b981' },
+  number:          { icon: <Phone className="w-3.5 h-3.5" />,  color: '#3b82f6' },
+  yes_no:          { icon: <ToggleLeft className="w-3.5 h-3.5" />,  color: '#14b8a6' },
+  rating:          { icon: <Star className="w-3.5 h-3.5" />,  color: '#f97316' },
+  file_upload:     { icon: <Upload className="w-3.5 h-3.5" />,  color: '#64748b' },
 };
 
 // Ending node (the Thank You screen)

@@ -22,6 +22,7 @@ import type {
   ResponseDetail,
 } from '../../../lib/types';
 import Modal from '../../../components/Modal';
+import BuilderTopBar from '../../../components/builder/BuilderTopBar';
 
 const ACCENT_COLORS = [
   '#6366f1', '#8b5cf6', '#ec4899', '#f59e0b',
@@ -272,39 +273,28 @@ export default function ResultsPage() {
 
   return (
     <div className="min-h-screen" style={{ background: '#f7f8fa' }}>
-      {/* Header */}
-      <header
-        className="sticky top-0 z-20 border-b"
-        style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', borderColor: '#e5e7eb' }}
-      >
-        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center gap-4">
-          <button
-            onClick={() => router.push(`/forms/${formId}/edit`)}
-            className="btn btn-ghost btn-sm !px-2"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M19 12H5M5 12l7-7M5 12l7 7" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-          <div className="w-px h-6 bg-gray-200" />
-          <div className="flex-1 min-w-0">
-            <h1 className="font-semibold text-gray-900 truncate">{form.title}</h1>
-            <p className="text-xs text-gray-400">Results & Analytics</p>
-          </div>
+      <BuilderTopBar 
+        formId={form.id} 
+        formTitle={form.title} 
+        publicSlug={form.public_slug} 
+      />
+
+      <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+        {/* Page Actions */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-gray-900">Results & Analytics</h2>
           <button
             id="export-csv-btn"
             onClick={handleExport}
-            className="btn btn-secondary btn-sm"
+            className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition-colors cursor-pointer shadow-sm"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             Export CSV
           </button>
         </div>
-      </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
         {/* Stats row */}
         <div className="grid grid-cols-3 gap-4">
           {[

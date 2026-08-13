@@ -22,6 +22,7 @@ import QuestionNode, { EndingNode, type QuestionNodeData } from './QuestionNode'
 import LogicEdge, { type LogicEdgeData } from './LogicEdge';
 import RuleEditorModal from './RuleEditorModal';
 import CanvasControls from './CanvasControls';
+import PullDataPanel from './PullDataPanel';
 
 // ── Dagre auto-layout ─────────────────────────────────────────────────────────
 const NODE_WIDTH = 150;
@@ -288,6 +289,7 @@ function LogicMapCanvasInner({ mapData, onMapDataChange }: LogicMapCanvasInnerPr
         style={{ background: '#f5f5f5' }}
       >
         <Background color="#e5e7eb" gap={20} size={1} />
+        <PullDataPanel />
         <CanvasControls
           showMinimap={showMinimap}
           onToggleMinimap={() => setShowMinimap((v) => !v)}

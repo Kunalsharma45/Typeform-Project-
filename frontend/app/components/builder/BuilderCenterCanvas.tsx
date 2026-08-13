@@ -130,8 +130,16 @@ function QuestionEditorPreview({
   // Hooks must be at the top level
   const [isDropdownModalOpen, setIsDropdownModalOpen] = useState(false);
   const [dropdownBulkText, setDropdownBulkText] = useState('');
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
-  if (question.type === 'short_text' || question.type === 'text') {
+  if (question.type === 'short_text') {
     return (
       <div className="w-full border-b border-gray-400 pb-2">
         <span className="text-gray-300 text-xl">Type your answer here...</span>
@@ -270,17 +278,6 @@ function QuestionEditorPreview({
       });
     };
     
-    const sensors = useSensors(
-      useSensor(PointerSensor, {
-        activationConstraint: {
-          distance: 5,
-        },
-      }),
-      useSensor(KeyboardSensor, {
-        coordinateGetter: sortableKeyboardCoordinates,
-      })
-    );
-
     const handleDragEnd = (event: DragEndEvent) => {
       const { active, over } = event;
       if (active.id !== over?.id && over) {
