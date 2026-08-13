@@ -157,9 +157,9 @@ class QuestionListCreateView(APIView):
             return DRFResponse({"detail": "Form not found."}, status=status.HTTP_404_NOT_FOUND)
 
         max_index = form.questions.count()
+        
+        # request.data is already a parsed JSON dict from the frontend
         data = dict(request.data)
-        # data might come in as QueryDict (lists); normalise
-        data = {k: (v[0] if isinstance(v, list) and len(v) == 1 else v) for k, v in data.items()}
         data["form"] = form.id
         data["order_index"] = max_index
 

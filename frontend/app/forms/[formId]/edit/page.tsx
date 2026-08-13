@@ -326,7 +326,10 @@ function QuestionEditor({
                 className="input flex-1 text-sm"
                 placeholder="Question order index (0-based)"
                 value={question.logic?.goto_question_id ?? ''}
-                onChange={(e) => onChange({ logic: { ...question.logic, goto_question_id: parseInt(e.target.value, 10) } as Question['logic'] })}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  onChange({ logic: { ...question.logic, goto_question_id: isNaN(val) ? undefined : val } as Question['logic'] });
+                }}
               />
             </div>
             {question.logic?.if_option_id && (

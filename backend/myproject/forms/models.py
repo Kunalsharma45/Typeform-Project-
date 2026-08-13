@@ -33,7 +33,7 @@ class Question(models.Model):
     ]
     form = models.ForeignKey(Form, on_delete=models.CASCADE, related_name="questions")
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)
-    title = models.CharField(max_length=500)
+    title = models.CharField(max_length=500, blank=True, default="")
     description = models.CharField(max_length=500, blank=True, default="")
     order_index = models.PositiveIntegerField()
     required = models.BooleanField(default=False)

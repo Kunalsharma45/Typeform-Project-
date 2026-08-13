@@ -105,7 +105,7 @@ function FormCard({
 
         {/* Actions */}
         <div
-          className="flex items-center gap-1.5 pt-3 border-t border-gray-100 mt-auto"
+          className="flex items-center flex-wrap gap-1.5 pt-3 border-t border-gray-100 mt-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -145,7 +145,7 @@ function FormCard({
           <button
             id={`publish-form-${form.id}`}
             onClick={onPublishToggle}
-            className={`btn btn-sm ${isPublished ? 'btn-secondary' : 'btn-primary'}`}
+            className={`btn btn-sm flex-shrink-0 ${isPublished ? 'btn-secondary' : 'btn-primary'}`}
             style={!isPublished ? { background: accent } : {}}
             title={isPublished ? 'Unpublish' : 'Publish'}
           >
