@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { api } from '../../lib/api';
 import {
   ChevronRight,
   Share2,
@@ -43,6 +44,7 @@ export default function BuilderTopBar({
   const pathname = usePathname();
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(formTitle);
+  const [isPublishing, setIsPublishing] = useState(false);
   
   let activeTab = 'Content';
   if (pathname?.includes('/workflow')) activeTab = 'Workflow';
@@ -62,6 +64,19 @@ export default function BuilderTopBar({
       toast.success('Public form link copied to clipboard!');
     } else {
       toast('Form must be published to share', { icon: 'ℹ️' });
+    }
+  };
+
+  const handlePublish = async () => {
+    try {
+      setIsPublishing(true);
+      await api.forms.publish(formId);
+      toast.success('Form published successfully!');
+      window.location.reload();
+    } catch (e) {
+      toast.error('Failed to publish form');
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -179,6 +194,18 @@ export default function BuilderTopBar({
           className="bg-[#046a38] hover:bg-[#02522b] text-white text-sm font-semibold px-5 py-2 rounded-full transition-colors shadow-xs cursor-pointer"
         >
           View plans
+        </button>
+
+        <button
+          onClick={handlePublish}
+          disabled={isPublishing}
+          className={`text-sm font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer ${
+            status === 'published' 
+              ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' 
+              : 'bg-black text-white hover:bg-gray-800'
+          }`}
+        >
+          {isPublishing ? '...' : status === 'published' ? 'Published' : 'Publish'}
         </button>
 
         <button
