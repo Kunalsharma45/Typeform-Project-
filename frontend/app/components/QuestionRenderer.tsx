@@ -14,6 +14,7 @@ interface QuestionRendererProps {
   onSubmit?: (value: unknown) => void;
   error?: string;
   questionNumber?: number;
+  questionLetter?: string;
   accentColor?: string;
 }
 
@@ -45,7 +46,7 @@ const COUNTRIES = [
 ];
 
 function PhoneNumberRenderer({
-  question, mode, value, onChange, onSubmit, error, questionNumber, accentColor = '#6366f1',
+  question, mode, value, onChange, onSubmit, error, questionNumber, questionLetter, accentColor = '#6366f1',
   focused, setFocused, handleEnter, isRespondent, inputRef
 }: any) {
   const defaultCountryCode = getOptions(question).find((o) => o.id === 'country')?.label || 'US';
@@ -61,7 +62,7 @@ function PhoneNumberRenderer({
 
   return (
     <div className="w-full">
-      <QuestionTitle question={question} questionNumber={questionNumber} />
+      <QuestionTitle question={question} questionNumber={questionNumber} questionLetter={questionLetter} />
       <div className="relative mt-6 flex items-center gap-4">
         
         {/* Country Dropdown */}
@@ -160,6 +161,7 @@ function QuestionRendererInner({
   onSubmit,
   error,
   questionNumber,
+  questionLetter,
   accentColor = '#6366f1',
 }: QuestionRendererProps) {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
@@ -203,7 +205,7 @@ function QuestionRendererInner({
 
     return (
       <div className="w-full">
-        <QuestionTitle question={question} questionNumber={questionNumber} />
+        <QuestionTitle question={question} questionNumber={questionNumber} questionLetter={questionLetter} />
         <div className="relative mt-6">
           <input
             ref={inputRef as React.Ref<HTMLInputElement>}
@@ -254,7 +256,7 @@ function QuestionRendererInner({
   if (question.type === 'long_text') {
     return (
       <div className="w-full">
-        <QuestionTitle question={question} questionNumber={questionNumber} />
+        <QuestionTitle question={question} questionNumber={questionNumber} questionLetter={questionLetter} />
         <div className="relative mt-6">
           <textarea
             ref={inputRef as React.Ref<HTMLTextAreaElement>}
@@ -308,7 +310,7 @@ function QuestionRendererInner({
   if (question.type === 'number') {
     return (
       <PhoneNumberRenderer 
-        {...{ question, mode, value, onChange, onSubmit, error, questionNumber, accentColor, focused, setFocused, handleEnter, isRespondent, inputRef }} 
+        {...{ question, mode, value, onChange, onSubmit, error, questionNumber, questionLetter, accentColor, focused, setFocused, handleEnter, isRespondent, inputRef }} 
       />
     );
   }
@@ -347,7 +349,7 @@ function QuestionRendererInner({
 
     return (
       <div className="w-full">
-        <QuestionTitle question={question} questionNumber={questionNumber} />
+        <QuestionTitle question={question} questionNumber={questionNumber} questionLetter={questionLetter} />
         <div className="mt-6 space-y-3 max-w-xl">
           {options.map((opt, idx) => {
             const isSelected = selectedId === opt.id;
@@ -411,7 +413,7 @@ function QuestionRendererInner({
 
     return (
       <div className="w-full">
-        <QuestionTitle question={question} questionNumber={questionNumber} />
+        <QuestionTitle question={question} questionNumber={questionNumber} questionLetter={questionLetter} />
         <div className="mt-6 flex gap-4">
           {[
             { val: 'yes', label: 'Yes', key: 'Y', emoji: '👍' },
@@ -470,7 +472,7 @@ function QuestionRendererInner({
 
     return (
       <div className="w-full">
-        <QuestionTitle question={question} questionNumber={questionNumber} />
+        <QuestionTitle question={question} questionNumber={questionNumber} questionLetter={questionLetter} />
         <div className="mt-6 flex flex-col items-start gap-4">
           <div className="flex gap-4 flex-wrap">
             {Array.from({ length: max }, (_, i) => i + 1).map((n) => {
@@ -513,7 +515,7 @@ function QuestionRendererInner({
     const fileVal = value as { filename?: string } | null;
     return (
       <div className="w-full">
-        <QuestionTitle question={question} questionNumber={questionNumber} />
+        <QuestionTitle question={question} questionNumber={questionNumber} questionLetter={questionLetter} />
         <div className="mt-6">
           {isRespondent ? (
             <div>
@@ -574,16 +576,18 @@ function QuestionRendererInner({
 function QuestionTitle({
   question,
   questionNumber,
+  questionLetter,
 }: {
   question: Question;
   questionNumber?: number;
+  questionLetter?: string;
 }) {
   return (
     <div>
       <div className="flex items-start gap-3">
         {questionNumber !== undefined && (
           <span className="text-sm text-gray-400 mt-1 flex-shrink-0 font-medium">
-            {questionNumber}
+            {questionNumber}{questionLetter || ''}
             <span className="ml-0.5">→</span>
           </span>
         )}

@@ -132,21 +132,23 @@ export default function DashboardPage() {
     }
   };
 
-  // Handle Publish / Unpublish Toggle
   const handlePublishToggle = async (form: FormListItem) => {
     const isPublished = form.status === 'published';
     const toastId = toast.loading(
       isPublished ? 'Unpublishing...' : 'Publishing...'
     );
     try {
+      let updatedForm;
       if (isPublished) {
-        await api.forms.unpublish(form.id);
+        updatedForm = await api.forms.unpublish(form.id);
         toast.success('Form unpublished', { id: toastId });
       } else {
-        await api.forms.publish(form.id);
+        updatedForm = await api.forms.publish(form.id);
         toast.success('Form published! Link is live.', { id: toastId });
       }
-      await loadForms();
+      setForms((prev) => 
+        prev.map(f => f.id === form.id ? { ...f, status: updatedForm.status, public_slug: updatedForm.public_slug } : f)
+      );
     } catch {
       toast.error('Failed to update status', { id: toastId });
     }
@@ -181,36 +183,6 @@ export default function DashboardPage() {
                 <h1 className="text-[26px] font-normal text-gray-900 tracking-tight leading-none mr-2">
                   My workspace
                 </h1>
-
-                <button
-                  onClick={showComingSoon}
-                  className="p-1.5 text-gray-400 hover:text-gray-900 transition-colors"
-                  title="Workspace options"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 16 16">
-                    <path fill="currentColor" d="M1.5 8a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0m5 0a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0m5 0a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0" fillRule="evenodd" clipRule="evenodd"></path>
-                  </svg>
-                </button>
-
-                <button
-                  onClick={showComingSoon}
-                  className="flex items-center gap-1.5 text-[15px] font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg px-2 py-1.5 ml-2 transition-colors"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 16 16">
-                    <path fill="currentColor" d="M6.706 1.5a2.03 2.03 0 1 0 0 4.059 2.03 2.03 0 0 0 0-4.059m-3.53 2.03a3.53 3.53 0 1 1 7.06 0 3.53 3.53 0 0 1-7.06 0M13.25 4a.75.75 0 0 1 .75.75v1.255h1.246a.75.75 0 0 1 0 1.5H14V8.75a.75.75 0 1 1-1.5 0V7.505h-1.25a.75.75 0 0 1 0-1.5h1.25V4.75a.75.75 0 0 1 .75-.75M6.706 9.441c-2.566 0-4.447 1.641-5.04 3.917a.1.1 0 0 0-.003.038.1.1 0 0 0 .022.037c.029.033.086.067.163.067h9.715a.22.22 0 0 0 .164-.067.1.1 0 0 0 .021-.037.1.1 0 0 0-.002-.038c-.593-2.276-2.474-3.917-5.04-3.917M.214 12.98C.967 10.09 3.409 7.94 6.706 7.94s5.739 2.15 6.492 5.039c.295 1.13-.647 2.02-1.635 2.02H1.848C.861 15-.08 14.11.214 12.98" fillRule="evenodd" clipRule="evenodd"></path>
-                  </svg>
-                  Invite
-                </button>
-
-                <button
-                  onClick={showComingSoon}
-                  className="p-1 text-[#046a38] hover:text-[#02522b] transition-colors"
-                  title="Security Badge"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 16 16">
-                    <path fill="currentColor" d="M4.526 3.59a.25.25 0 0 1 .192-.09h6.564a.25.25 0 0 1 .192.09l2.865 3.439a.25.25 0 0 1-.015.336l-6.147 6.147a.25.25 0 0 1-.354 0L1.676 7.366a.25.25 0 0 1-.015-.336zM4.718 2c-.519 0-1.012.23-1.344.63L.508 6.068a1.75 1.75 0 0 0 .107 2.358l6.148 6.147a1.75 1.75 0 0 0 2.474 0l6.147-6.147a1.75 1.75 0 0 0 .107-2.358L12.626 2.63A1.75 1.75 0 0 0 11.282 2zm2.36 4.236a.75.75 0 1 0-1.143-.972l-.32.376-.004.005-.937 1.125a.75.75 0 0 0 .046 1.01l1.5 1.5a.75.75 0 0 0 1.06-1.06L6.265 7.204l.496-.596z" fillRule="evenodd" clipRule="evenodd"></path>
-                  </svg>
-                </button>
               </div>
 
               {/* Right View & Sort Controls */}

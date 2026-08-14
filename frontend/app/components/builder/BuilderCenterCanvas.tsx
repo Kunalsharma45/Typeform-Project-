@@ -48,8 +48,9 @@ interface BuilderCenterCanvasProps {
   activeItem: 'welcome' | number | string;
   selectedQuestion: Question | null;
   onAddQuestion: () => void;
+  onSelectQuestion: (qId: number) => void;
   onUpdateWelcome: (welcome: Partial<Form['welcome_screen']>) => void;
-  onUpdateQuestion: (updates: Partial<Question>) => void;
+  onUpdateQuestion: (qId: number, updates: Partial<Question>) => void;
   onUpdateThankYou: (thankyou: Partial<Form['thankyou_screen']>) => void;
 }
 
@@ -387,11 +388,74 @@ function QuestionEditorPreview({
   );
 }
 
+function QuestionEditor({
+  question,
+  qIndex,
+  qLetter,
+  isActive,
+  onSelect,
+  onUpdateQuestion
+}: {
+  question: Question;
+  qIndex: number;
+  qLetter?: string;
+  isActive?: boolean;
+  onSelect?: () => void;
+  onUpdateQuestion: (updates: Partial<Question>) => void;
+}) {
+  return (
+    <div 
+      className={`w-full max-w-3xl text-left pl-4 pr-8 py-4 rounded-xl transition-colors cursor-text ${isActive ? 'bg-indigo-50/50' : 'hover:bg-gray-50/50'}`}
+      onClick={(e) => {
+        // Only trigger select if not clicking an input to avoid interfering with edits
+        if ((e.target as HTMLElement).tagName !== 'INPUT' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+          onSelect?.();
+        }
+      }}
+    >
+      <div className="flex items-start gap-3">
+        <div className="mt-1.5 w-5 h-5 bg-[#262627] text-white rounded flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+          {qIndex + 1}{qLetter || ''}
+        </div>
+        <div className="flex-1 space-y-2">
+          <div className="relative w-full">
+            {/* Mirror layer to position the asterisk exactly after the text */}
+            <div className="absolute top-0 left-0 w-full h-full pointer-events-none text-2xl font-medium whitespace-pre-wrap break-words border-0">
+              <span className="invisible">{question.title || 'Your question here. Recall information with @'}</span>
+              {question.required && (
+                <span className="text-gray-400">*</span>
+              )}
+            </div>
+            <textarea
+              className="relative z-10 w-full text-2xl font-medium text-gray-600 bg-transparent border-0 placeholder-gray-400 outline-none resize-none focus:text-gray-900 transition-colors"
+              value={question.title}
+              onChange={(e) => onUpdateQuestion({ title: e.target.value })}
+              placeholder="Your question here. Recall information with @"
+              rows={1}
+            />
+          </div>
+          <input
+            type="text"
+            className="w-full text-sm italic text-gray-400 bg-transparent border-0 placeholder-gray-400 outline-none focus:text-gray-600 transition-colors"
+            value={question.description || ''}
+            onChange={(e) => onUpdateQuestion({ description: e.target.value })}
+            placeholder="Description (optional)"
+          />
+          <div className="pt-8">
+            <QuestionEditorPreview question={question} onUpdateQuestion={onUpdateQuestion} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function BuilderCenterCanvas({
   form,
   activeItem,
   selectedQuestion,
   onAddQuestion,
+  onSelectQuestion,
   onUpdateWelcome,
   onUpdateQuestion,
   onUpdateThankYou,
@@ -405,6 +469,14 @@ export default function BuilderCenterCanvas({
   const welcome = form.welcome_screen || {};
   const thankyou = form.thankyou_screen || {};
   const accent = form.theme?.accent_color || '#18181b';
+  
+  const activePage = typeof activeItem === 'number' 
+    ? form.pages?.find(p => p.questions.some(q => q.id === activeItem))
+    : null;
+    
+  const pageIndex = activePage 
+    ? form.pages?.findIndex(p => p.id === activePage.id)
+    : 0;
 
   return (
     <div className="flex-1 flex flex-col bg-transparent min-w-0 relative">
@@ -530,7 +602,7 @@ export default function BuilderCenterCanvas({
                 {welcome.time_to_complete && (
                   <div className="flex items-center gap-1.5 text-xs text-gray-400 font-medium pt-1">
                     <Clock className="w-3.5 h-3.5 text-gray-400" />
-                    <span>Takes X minutes</span>
+                    <span>Takes {Math.max(1, Math.ceil(form.pages.reduce((acc, p) => acc + p.questions.length, 0) / 2))} minutes</span>
                   </div>
                 )}
                 
@@ -545,41 +617,25 @@ export default function BuilderCenterCanvas({
           )}
 
           {/* Question Editor Content */}
-          {typeof activeItem === 'number' && selectedQuestion && (
-            <div className="w-full max-w-3xl text-left pl-4 pr-8">
-              <div className="flex items-start gap-3">
-                <div className="mt-1.5 w-5 h-5 bg-[#262627] text-white rounded flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-                  {(form.questions?.findIndex((q) => q.id === selectedQuestion.id) ?? 0) + 1}
-                </div>
-                <div className="flex-1 space-y-2">
-                  <div className="relative w-full">
-                    {/* Mirror layer to position the asterisk exactly after the text */}
-                    <div className="absolute top-0 left-0 w-full h-full pointer-events-none text-2xl font-medium whitespace-pre-wrap break-words border-0">
-                      <span className="invisible">{selectedQuestion.title || 'Your question here. Recall information with @'}</span>
-                      {selectedQuestion.required && (
-                        <span className="text-gray-400">*</span>
-                      )}
+          {typeof activeItem === 'number' && activePage && (
+            <div className="w-full flex flex-col gap-12">
+              {activePage.questions.map((q, idx) => (
+                <div key={q.id} className="relative">
+                  {idx > 0 && (
+                    <div className="absolute -top-8 left-12 right-12 flex justify-center">
+                      <div className="text-gray-300 tracking-[0.5em] text-xl font-bold">...</div>
                     </div>
-                    <textarea
-                      className="relative z-10 w-full text-2xl font-medium text-gray-600 bg-transparent border-0 placeholder-gray-400 outline-none resize-none focus:text-gray-900 transition-colors"
-                      value={selectedQuestion.title}
-                      onChange={(e) => onUpdateQuestion({ title: e.target.value })}
-                      placeholder="Your question here. Recall information with @"
-                      rows={1}
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    className="w-full text-sm italic text-gray-400 bg-transparent border-0 placeholder-gray-400 outline-none focus:text-gray-600 transition-colors"
-                    value={selectedQuestion.description || ''}
-                    onChange={(e) => onUpdateQuestion({ description: e.target.value })}
-                    placeholder="Description (optional)"
+                  )}
+                  <QuestionEditor
+                    question={q}
+                    qIndex={pageIndex}
+                    qLetter={activePage.questions.length > 1 ? String.fromCharCode(97 + idx) : undefined}
+                    isActive={q.id === activeItem}
+                    onSelect={() => onSelectQuestion(q.id)}
+                    onUpdateQuestion={(updates) => onUpdateQuestion(q.id, updates)}
                   />
-                  <div className="pt-8">
-                    <QuestionEditorPreview question={selectedQuestion} onUpdateQuestion={onUpdateQuestion} />
-                  </div>
                 </div>
-              </div>
+              ))}
             </div>
           )}
 

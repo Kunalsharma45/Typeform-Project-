@@ -19,6 +19,17 @@ class Form(models.Model):
         return self.title
 
 
+class Page(models.Model):
+    form = models.ForeignKey(Form, on_delete=models.CASCADE, related_name="pages")
+    order_index = models.PositiveIntegerField()
+
+    class Meta:
+        ordering = ["order_index"]
+
+    def __str__(self):
+        return f"Page {self.order_index} of {self.form.title}"
+
+
 class Question(models.Model):
     TYPE_CHOICES = [
         ("short_text", "Short Text"),
@@ -32,10 +43,12 @@ class Question(models.Model):
         ("file_upload", "File Upload"),
     ]
     form = models.ForeignKey(Form, on_delete=models.CASCADE, related_name="questions")
+    page = models.ForeignKey(Page, on_delete=models.CASCADE, related_name="questions")
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)
     title = models.CharField(max_length=500, blank=True, default="")
     description = models.CharField(max_length=500, blank=True, default="")
     order_index = models.PositiveIntegerField()
+    order_in_page = models.PositiveIntegerField(default=0)
     required = models.BooleanField(default=False)
     options = models.JSONField(default=list, blank=True)
 
@@ -53,7 +66,8 @@ class Question(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["order_index"]
+        # We preserve order_index as primary fallback, but order_in_page dictates page position
+        ordering = ["order_index", "order_in_page"]
 
     def __str__(self):
         return f"{self.form.title} – {self.title[:50]}"

@@ -120,7 +120,7 @@ function WelcomeScreen({
         {ws?.time_to_complete && (
           <div className="flex items-center gap-1.5">
             <Clock className="w-4 h-4" />
-            <span>Takes X minutes</span>
+            <span>Takes {Math.max(1, Math.ceil(form.pages.reduce((acc, p) => acc + p.questions.length, 0) / 2))} minutes</span>
           </div>
         )}
         
@@ -212,7 +212,7 @@ export default function PublicFormPage() {
   const [form, setForm] = useState<Form | null>(null);
   const [flowState, setFlowState] = useState<FlowState>('loading');
   const [responseId, setResponseId] = useState<number | null>(null);
-  const [questionIndex, setQuestionIndex] = useState(0);
+  const [pageIndex, setPageIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, unknown>>({});
   const [errors, setErrors] = useState<Record<number, string>>({});
   const [slideDir, setSlideDir] = useState(1); // 1 = forward, -1 = backward
@@ -229,8 +229,8 @@ export default function PublicFormPage() {
           if (savedStr) {
             const saved = JSON.parse(savedStr);
             if (saved.flowState) setFlowState(saved.flowState);
-            if (saved.questionIndex !== undefined && saved.questionIndex < f.questions.length) {
-              setQuestionIndex(saved.questionIndex);
+            if (saved.pageIndex !== undefined && saved.pageIndex < f.pages.length) {
+              setPageIndex(saved.pageIndex);
             }
             if (saved.responseId) setResponseId(saved.responseId);
             if (saved.answers) setAnswers(saved.answers);
@@ -255,13 +255,13 @@ export default function PublicFormPage() {
       } else {
         sessionStorage.setItem(`form-state-${slug}`, JSON.stringify({
           flowState,
-          questionIndex,
+          pageIndex,
           responseId,
           answers
         }));
       }
     }
-  }, [slug, form, flowState, questionIndex, responseId, answers]);
+  }, [slug, form, flowState, pageIndex, responseId, answers]);
 
   // Start response on welcome screen or immediately
   useEffect(() => {
@@ -277,130 +277,140 @@ export default function PublicFormPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flowState, form]);
 
-  const currentQuestion: Question | null = form?.questions[questionIndex] ?? null;
-  const totalQuestions = form?.questions.length ?? 0;
+  const currentPage: import('../../lib/types').Page | null = form?.pages[pageIndex] ?? null;
+  const totalPages = form?.pages.length ?? 0;
   const accent = form?.theme?.accent_color || '#6366f1';
   const bgColor = form?.theme?.background || '#fff';
 
-  // Determine next question index (handles branching)
-  const getNextIndex = useCallback(
-    (current: Question, value: unknown): number => {
-      // ── New logic_rules format (first-match-wins) ──────────────────────
-      if (Array.isArray(current.logic_rules) && current.logic_rules.length > 0) {
-        const strVal = typeof value === 'object' && value !== null && 'selected_option_id' in (value as object)
-          ? (value as { selected_option_id: string }).selected_option_id
-          : String(value ?? '');
+  // Determine next page index (handles branching)
+  const getNextPageIndex = useCallback(
+    (current: import('../../lib/types').Page, pageAnswers: Record<number, unknown>): number => {
+      // Find the first matching rule across all questions in the page
+      for (const question of current.questions) {
+        if (Array.isArray(question.logic_rules) && question.logic_rules.length > 0) {
+          const value = pageAnswers[question.id];
+          const strVal = typeof value === 'object' && value !== null && 'selected_option_id' in (value as object)
+            ? (value as { selected_option_id: string }).selected_option_id
+            : String(value ?? '');
 
-        for (const rule of current.logic_rules) {
-          const op = rule.condition.operator;
-          const rVal = rule.condition.value !== undefined ? String(rule.condition.value) : '';
-          let matched = false;
+          for (const rule of question.logic_rules) {
+            const op = rule.condition.operator;
+            const rVal = rule.condition.value !== undefined ? String(rule.condition.value) : '';
+            let matched = false;
 
-          if (op === 'equals') matched = strVal === rVal;
-          else if (op === 'not_equals') matched = strVal !== rVal;
-          else if (op === 'contains') matched = strVal.includes(rVal);
-          else if (op === 'greater_than') matched = Number(strVal) > Number(rVal);
-          else if (op === 'less_than') matched = Number(strVal) < Number(rVal);
-          else if (op === 'is_answered') matched = strVal !== '' && strVal !== 'null' && strVal !== 'undefined';
-          else if (op === 'is_empty') matched = strVal === '' || strVal === 'null' || strVal === 'undefined';
+            if (op === 'equals') matched = strVal === rVal;
+            else if (op === 'not_equals') matched = strVal !== rVal;
+            else if (op === 'contains') matched = strVal.includes(rVal);
+            else if (op === 'greater_than') matched = Number(strVal) > Number(rVal);
+            else if (op === 'less_than') matched = Number(strVal) < Number(rVal);
+            else if (op === 'is_answered') matched = strVal !== '' && strVal !== 'null' && strVal !== 'undefined';
+            else if (op === 'is_empty') matched = strVal === '' || strVal === 'null' || strVal === 'undefined';
 
-          if (matched) {
-            if (rule.target_is_ending) return form!.questions.length; // → thank you
-            if (rule.target_question_id !== null) {
-              const idx = form!.questions.findIndex(q => q.id === rule.target_question_id);
-              if (idx >= 0) return idx;
+            if (matched) {
+              if (rule.target_is_ending) return form!.pages.length; // → thank you
+              if (rule.target_question_id !== null) {
+                const targetPageIdx = form!.pages.findIndex(p => p.questions.some(q => q.id === rule.target_question_id));
+                if (targetPageIdx >= 0) return targetPageIdx;
+              }
             }
           }
-        }
 
-        // No rule matched → check default_next
-        if (current.default_next_is_ending) return form!.questions.length;
-        if (current.default_next_question_id !== null) {
-          const idx = form!.questions.findIndex(q => q.id === current.default_next_question_id);
-          if (idx >= 0) return idx;
+          // No rule matched for this question → check default_next
+          if (question.default_next_is_ending) return form!.pages.length;
+          if (question.default_next_question_id !== null) {
+            const targetPageIdx = form!.pages.findIndex(p => p.questions.some(q => q.id === question.default_next_question_id));
+            if (targetPageIdx >= 0) return targetPageIdx;
+          }
         }
-        return questionIndex + 1;
+        
+        // ── Legacy logic field fallback ────────────────────────────────────
+        if (question.logic?.if_option_id && question.logic?.goto_question_id !== undefined) {
+          const value = pageAnswers[question.id];
+          let selectedId: string | null = null;
+          if (typeof value === 'object' && value !== null && 'selected_option_id' in (value as object)) {
+            selectedId = (value as { selected_option_id: string }).selected_option_id;
+          } else if (typeof value === 'string') {
+            selectedId = value;
+          }
+          if (selectedId === String(question.logic.if_option_id)) {
+            const targetPageIdx = form?.pages.findIndex(
+              (p) => p.questions.some(q => q.order_index === question.logic!.goto_question_id)
+            );
+            if (targetPageIdx !== undefined && targetPageIdx >= 0) return targetPageIdx;
+          }
+        }
       }
-
-      // ── Legacy logic field fallback ────────────────────────────────────
-      if (current.logic?.if_option_id && current.logic?.goto_question_id !== undefined) {
-        let selectedId: string | null = null;
-        if (typeof value === 'object' && value !== null && 'selected_option_id' in (value as object)) {
-          selectedId = (value as { selected_option_id: string }).selected_option_id;
-        } else if (typeof value === 'string') {
-          selectedId = value;
-        }
-        if (selectedId === String(current.logic.if_option_id)) {
-          const targetIdx = form?.questions.findIndex(
-            (q) => q.order_index === current.logic!.goto_question_id
-          );
-          if (targetIdx !== undefined && targetIdx >= 0) return targetIdx;
-        }
-      }
-      return questionIndex + 1;
+      return pageIndex + 1;
     },
-    [form, questionIndex]
+    [form, pageIndex]
   );
 
 
   const advanceToNext = useCallback(
-    async (value: unknown) => {
-      if (!currentQuestion || !form) return;
+    async () => {
+      if (!currentPage || !form) return;
 
-      // Validate first
-      const err = validateAnswer(currentQuestion, value);
-      if (err) {
-        setErrors((prev) => ({ ...prev, [currentQuestion.id]: err }));
+      // Validate all
+      let hasError = false;
+      const newErrors: Record<number, string> = {};
+      for (const q of currentPage.questions) {
+         const err = validateAnswer(q, answers[q.id]);
+         if (err) {
+           newErrors[q.id] = err;
+           hasError = true;
+         }
+      }
+      if (hasError) {
+        setErrors((prev) => ({ ...prev, ...newErrors }));
         return;
       }
-      setErrors((prev) => ({ ...prev, [currentQuestion.id]: '' }));
+      setErrors({});
 
-      // Autosave answer
+      // Autosave answers for page
       if (responseId) {
         try {
-          // Check if file upload
-          const valObj = value as { _file?: File; filename?: string } | null;
-          if (currentQuestion.type === 'file_upload' && valObj?._file) {
-            await api.public.answer(responseId, currentQuestion.id, { filename: valObj.filename }, valObj._file);
-          } else {
-            await api.public.answer(responseId, currentQuestion.id, value);
-          }
+          const batch = currentPage.questions.map(q => {
+             const val = answers[q.id];
+             const valObj = val as { _file?: File; filename?: string } | null;
+             if (q.type === 'file_upload' && valObj?._file) {
+               return { question_id: q.id, value: { filename: valObj.filename }, file: valObj._file };
+             }
+             return { question_id: q.id, value: val };
+          });
+          await api.public.answerBatch(responseId, batch);
         } catch {
-          // Autosave failure shouldn't block progress
+          // ignore
         }
       }
 
-      const nextIdx = getNextIndex(currentQuestion, value);
+      const nextIdx = getNextPageIndex(currentPage, answers);
 
-      if (nextIdx >= totalQuestions) {
-        // Submit
+      if (nextIdx >= totalPages) {
         setSubmitting(true);
         if (responseId) {
           try {
             await api.public.submit(responseId);
-          } catch {
-            // If server-side validation fails, we still show thank-you (frontend already validated)
-          }
+          } catch {}
         }
         setSubmitting(false);
         setFlowState('thankyou');
       } else {
         setSlideDir(1);
-        setQuestionIndex(nextIdx);
+        setPageIndex(nextIdx);
       }
     },
-    [currentQuestion, form, responseId, getNextIndex, totalQuestions]
+    [currentPage, form, responseId, getNextPageIndex, totalPages, answers]
   );
 
   const goBack = useCallback(() => {
-    if (questionIndex > 0) {
+    if (pageIndex > 0) {
       setSlideDir(-1);
-      setQuestionIndex((i) => i - 1);
+      setPageIndex((i) => i - 1);
       setErrors({});
     } else if (flowState === 'question' && (form?.welcome_screen?.title || form?.welcome_screen?.description)) {
       setFlowState('welcome');
     }
-  }, [questionIndex, flowState, form]);
+  }, [pageIndex, flowState, form]);
 
   // Keyboard: Enter to advance from welcome screen
   useEffect(() => {
@@ -448,7 +458,7 @@ export default function PublicFormPage() {
     <div className="min-h-screen relative overflow-hidden" style={{ background: bgColor }}>
       {/* Progress bar */}
       {flowState === 'question' && (
-        <ProgressBar current={questionIndex + 1} total={totalQuestions} accentColor={accent} />
+        <ProgressBar current={pageIndex + 1} total={totalPages} accentColor={accent} />
       )}
 
       {/* Navigation controls */}
@@ -471,7 +481,7 @@ export default function PublicFormPage() {
             className="px-3 py-1.5 rounded-full text-xs font-medium"
             style={{ background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(4px)', color: '#6b7280' }}
           >
-            {questionIndex + 1} / {totalQuestions}
+            {pageIndex + 1} / {totalPages}
           </div>
         </div>
       )}
@@ -485,9 +495,9 @@ export default function PublicFormPage() {
           />
         )}
 
-        {flowState === 'question' && currentQuestion && (
+        {flowState === 'question' && currentPage && (
           <motion.div
-            key={`q-${questionIndex}`}
+            key={`p-${pageIndex}`}
             custom={slideDir}
             variants={slideVariants}
             initial="enter"
@@ -497,23 +507,60 @@ export default function PublicFormPage() {
             className="min-h-screen flex items-center justify-center px-8 py-16"
           >
             <div className="w-full max-w-xl">
-              <QuestionRenderer
-                question={currentQuestion}
-                mode="respondent"
-                value={answers[currentQuestion.id]}
-                onChange={(val) => {
-                  setAnswers((prev) => ({ ...prev, [currentQuestion.id]: val }));
-                  setErrors((prev) => ({ ...prev, [currentQuestion.id]: '' }));
-                }}
-                onSubmit={(val) => {
-                  const finalVal = val !== undefined ? val : answers[currentQuestion.id];
-                  setAnswers((prev) => ({ ...prev, [currentQuestion.id]: finalVal }));
-                  advanceToNext(finalVal);
-                }}
-                error={errors[currentQuestion.id]}
-                questionNumber={questionIndex + 1}
-                accentColor={accent}
-              />
+              <div className="flex flex-col gap-12 w-full relative">
+                {currentPage.questions.map((q, idx) => (
+                  <div key={q.id} className="relative">
+                    {idx > 0 && (
+                      <div className="absolute -top-8 left-12 right-12 flex justify-center">
+                        <div className="text-gray-300 tracking-[0.5em] text-xl font-bold">...</div>
+                      </div>
+                    )}
+                    <QuestionRenderer
+                      question={q}
+                      mode="respondent"
+                      value={answers[q.id]}
+                      onChange={(val) => {
+                        setAnswers((prev) => ({ ...prev, [q.id]: val }));
+                        setErrors((prev) => ({ ...prev, [q.id]: '' }));
+                      }}
+                      onSubmit={(val) => {
+                        const finalVal = val !== undefined ? val : answers[q.id];
+                        setAnswers((prev) => ({ ...prev, [q.id]: finalVal }));
+                        if (currentPage.questions.length === 1) {
+                          // Allow auto-advance if it's a single question page
+                          advanceToNext();
+                        }
+                      }}
+                      error={errors[q.id]}
+                      questionNumber={pageIndex + 1}
+                      questionLetter={currentPage.questions.length > 1 ? String.fromCharCode(97 + idx) : undefined}
+                      accentColor={accent}
+                    />
+                  </div>
+                ))}
+
+                {currentPage.questions.length > 0 && (
+                  <div className="mt-8 flex justify-end">
+                    <button
+                      onClick={advanceToNext}
+                      className="btn btn-xl"
+                      style={{
+                        background: accent,
+                        color: '#fff',
+                        borderRadius: '999px',
+                        padding: '12px 32px',
+                        fontSize: '18px',
+                        boxShadow: `0 8px 32px ${accent}40`,
+                      }}
+                    >
+                      {pageIndex === totalPages - 1 ? 'Submit' : 'OK'}
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="ml-2 inline">
+                        <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {submitting && (
                 <div className="mt-6 flex items-center gap-2 text-sm text-gray-400">

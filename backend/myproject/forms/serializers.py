@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Form, Question, Response, Answer
+from .models import Form, Question, Response, Answer, Page
 
 
 # ──────────────────────────────────────────────
@@ -11,12 +11,25 @@ class QuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = [
-            "id", "form", "type", "title", "description",
-            "order_index", "required", "options", "logic",
+            "id", "form", "page", "type", "title", "description",
+            "order_index", "order_in_page", "required", "options", "logic",
             "logic_rules", "default_next_question_id", "default_next_is_ending",
             "created_at", "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+
+# ──────────────────────────────────────────────
+# Page
+# ──────────────────────────────────────────────
+
+class PageSerializer(serializers.ModelSerializer):
+    questions = QuestionSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Page
+        fields = ["id", "form", "order_index", "questions"]
+        read_only_fields = ["id"]
 
 
 # ──────────────────────────────────────────────
@@ -65,8 +78,8 @@ class FormListSerializer(serializers.ModelSerializer):
 
 
 class FormDetailSerializer(serializers.ModelSerializer):
-    """Full form with ordered nested questions – used by creator and public endpoints."""
-    questions = QuestionSerializer(many=True, read_only=True)
+    """Full form with ordered nested pages – used by creator and public endpoints."""
+    pages = PageSerializer(many=True, read_only=True)
     response_count = serializers.SerializerMethodField()
 
     class Meta:
@@ -74,7 +87,7 @@ class FormDetailSerializer(serializers.ModelSerializer):
         fields = [
             "id", "title", "description", "status", "public_slug",
             "theme", "welcome_screen", "thankyou_screen",
-            "questions", "response_count",
+            "pages", "response_count",
             "created_at", "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]

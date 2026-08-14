@@ -63,10 +63,12 @@ export interface QuestionLogic {
 export interface Question {
   id: number;
   form: number;
+  page: number;
   type: QuestionType;
   title: string;
   description: string;
   order_index: number;
+  order_in_page: number;
   required: boolean;
   options: QuestionOption[] | { max: number } | [];
   logic: QuestionLogic | null;
@@ -107,7 +109,7 @@ export interface Form {
   theme: FormTheme;
   welcome_screen: WelcomeScreen;
   thankyou_screen: ThankYouScreen;
-  questions: Question[];
+  pages: Page[];
   response_count: number;
   created_at: string;
   updated_at: string;
@@ -181,4 +183,11 @@ export interface PaginatedResponse<T> {
   next: string | null;
   previous: string | null;
   results: T[];
+}
+
+export interface Page {
+  id: number;
+  form: number;
+  order_index: number;
+  questions: Question[];
 }

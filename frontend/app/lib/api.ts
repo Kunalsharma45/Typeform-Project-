@@ -146,6 +146,33 @@ export const api = {
         body: JSON.stringify(items),
       });
     },
+
+    move(
+      questionId: number,
+      targetId: number,
+      targetType: 'page' | 'question',
+      position: 'merge_into' | 'before' | 'after'
+    ): Promise<{ status: string }> {
+      const payload: Record<string, any> = { position };
+      if (targetType === 'page') {
+        payload.target_page_id = targetId;
+      } else {
+        payload.target_question_id = targetId;
+      }
+      return request(`/api/questions/${questionId}/move/`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+  },
+
+  pages: {
+    split(pageId: number, questionId: number, targetOrderIndex?: number): Promise<{ status: string }> {
+      return request(`/api/pages/${pageId}/split/`, {
+        method: 'POST',
+        body: JSON.stringify({ question_id: questionId, target_order_index: targetOrderIndex }),
+      });
+    }
   },
 
   // ─── Creator: Responses & Summary ──────────────────────────────────────────
@@ -197,6 +224,28 @@ export const api = {
       return request(`/api/public/responses/${responseId}/answer/`, {
         method: 'POST',
         body: JSON.stringify({ question_id: questionId, value }),
+      });
+    },
+
+    answerBatch(
+      responseId: number,
+      answers: Array<{ question_id: number; value: unknown; file?: File }>
+    ): Promise<Answer[]> {
+      const hasFiles = answers.some(a => !!a.file);
+      if (hasFiles) {
+        const fd = new FormData();
+        answers.forEach(a => {
+          fd.append(`value_${a.question_id}`, JSON.stringify(a.value));
+          if (a.file) {
+            fd.append(`file_${a.question_id}`, a.file);
+          }
+        });
+        return requestFormData(`/api/public/responses/${responseId}/answer/`, fd);
+      }
+      
+      return request(`/api/public/responses/${responseId}/answer/`, {
+        method: 'POST',
+        body: JSON.stringify({ answers: answers.map(a => ({ question_id: a.question_id, value: a.value })) }),
       });
     },
 

@@ -23,6 +23,7 @@ interface FormsTableProps {
   onDuplicate: (formId: number) => void;
   onDelete: (form: FormListItem) => void;
   onPublishToggle: (form: FormListItem) => void;
+  onRename: (form: FormListItem) => void;
   onCreateForm: () => void;
   viewMode?: 'list' | 'grid';
 }
@@ -232,7 +233,7 @@ export default function FormsTable({
   return (
     <div className="w-full space-y-1">
       {/* Table Header Row — Strict Proportional CSS Grid matching data rows */}
-      <div className="grid grid-cols-[1fr_100px_100px_130px_100px_40px] items-center px-4 py-2 text-[14px] text-gray-500 gap-8">
+      <div className="grid grid-cols-[3fr_1fr_1fr_1.5fr_1fr_40px] items-center px-6 py-3 text-[14px] text-gray-500 gap-6">
         <div></div>
         <div className="text-center">Responses</div>
         <div className="text-center">Completed</div>
@@ -247,7 +248,7 @@ export default function FormsTable({
       </div>
 
       {/* Table Data Rows */}
-      <div className="space-y-2 pt-2">
+      <div className="space-y-3 pt-2">
         {forms.map((form) => {
           const accentColor = form.theme?.accent_color || '#d9534f';
           const isPublished = form.status === 'published';
@@ -256,7 +257,7 @@ export default function FormsTable({
             <div
               key={form.id}
               onClick={() => onEdit(form.id)}
-              className="grid grid-cols-[1fr_100px_100px_130px_100px_40px] items-center px-4 py-2 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 transition-colors cursor-pointer group shadow-sm relative gap-8"
+              className="grid grid-cols-[3fr_1fr_1fr_1.5fr_1fr_40px] items-center px-6 py-4 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 transition-colors cursor-pointer group shadow-sm relative gap-6"
             >
               {/* Form Swatch & Title */}
               <div className="flex items-center gap-3.5 min-w-0 pr-2">

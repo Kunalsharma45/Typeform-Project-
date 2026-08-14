@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { api } from '../../../lib/api';
-import type { Form, Question, QuestionType } from '../../../lib/types';
+import type { Form, Page, Question, QuestionType } from '../../../lib/types';
 import Modal from '../../../components/Modal';
 import BuilderTopBar from '../../../components/builder/BuilderTopBar';
 import BuilderLeftSidebar from '../../../components/builder/BuilderLeftSidebar';
@@ -59,7 +59,7 @@ export default function BuilderPage() {
   // Selected Question object if activeItem is a question ID
   const selectedQuestion =
     typeof activeItem === 'number'
-      ? form?.questions.find((q) => q.id === activeItem) ?? null
+      ? form?.pages.flatMap(p => p.questions).find((q) => q.id === activeItem) ?? null
       : null;
 
   // Debounced Form Autosave
@@ -70,7 +70,7 @@ export default function BuilderPage() {
         try {
           const updated = await api.forms.patch(formId, updates);
           setForm((prev) =>
-            prev ? { ...prev, ...updated, questions: prev.questions } : null
+            prev ? { ...prev, ...updated, pages: prev.pages } : null
           );
         } catch {
           toast.error('Autosave failed');
@@ -119,19 +119,21 @@ export default function BuilderPage() {
     });
   };
 
-  const handleUpdateQuestion = (updates: Partial<Question>) => {
-    if (typeof activeItem !== 'number') return;
+  const handleUpdateQuestion = (qId: number, updates: Partial<Question>) => {
     setForm((prev) => {
       if (!prev) return prev;
       return {
         ...prev,
         status: 'draft',
-        questions: prev.questions.map((q) =>
-          q.id === activeItem ? { ...q, ...updates } : q
-        ),
+        pages: prev.pages.map((p) => ({
+          ...p,
+          questions: p.questions.map((q) =>
+            q.id === qId ? { ...q, ...updates } : q
+          ),
+        })),
       };
     });
-    scheduleQuestionAutosave(activeItem, updates);
+    scheduleQuestionAutosave(qId, updates);
     scheduleFormAutosave({ status: 'draft' });
   };
 
@@ -156,9 +158,9 @@ export default function BuilderPage() {
         options: defaultOptions as Question['options'],
       });
 
-      setForm((prev) =>
-        prev ? { ...prev, status: 'draft', questions: [...prev.questions, q] } : prev
-      );
+      // Fetch the full form again to get the proper page structure
+      const updatedForm = await api.forms.get(formId);
+      setForm(updatedForm);
       api.forms.patch(formId, { status: 'draft' });
       setActiveItem(q.id);
     } catch {
@@ -172,8 +174,14 @@ export default function BuilderPage() {
       await api.questions.delete(qId);
       setForm((prev) => {
         if (!prev) return prev;
-        const remaining = prev.questions.filter((q) => q.id !== qId);
-        return { ...prev, status: 'draft', questions: remaining };
+        return {
+          ...prev,
+          status: 'draft',
+          pages: prev.pages.map(p => ({
+            ...p,
+            questions: p.questions.filter(q => q.id !== qId)
+          })).filter(p => p.questions.length > 0)
+        };
       });
       api.forms.patch(formId, { status: 'draft' });
       if (activeItem === qId) {
@@ -184,24 +192,26 @@ export default function BuilderPage() {
     }
   };
 
-  const handleReorderQuestions = async (newQuestions: Question[]) => {
-    // Optimistic update
-    setForm((prev) => (prev ? { ...prev, status: 'draft', questions: newQuestions } : prev));
-    api.forms.patch(formId, { status: 'draft' });
-    
-    // Format for API
-    const items = newQuestions.map((q, idx) => ({
-      id: q.id,
-      order_index: idx,
-    }));
-    
+  const handleMoveQuestion = async (questionId: number, targetId: number, targetType: 'page' | 'question', position: 'merge_into' | 'before' | 'after') => {
     try {
-      await api.questions.reorder(formId, items);
+      // Optimistic update would be complex, so we'll just fetch after
+      await api.questions.move(questionId, targetId, targetType, position);
+      const updatedForm = await api.forms.get(formId);
+      setForm(updatedForm);
+      api.forms.patch(formId, { status: 'draft' });
     } catch {
-      toast.error('Failed to save question order');
-      // Revert on failure by refetching form
-      const f = await api.forms.get(formId);
-      setForm(f);
+      toast.error('Failed to move question');
+    }
+  };
+
+  const handleSplitPage = async (pageId: number, questionId: number) => {
+    try {
+      await api.pages.split(pageId, questionId);
+      const updatedForm = await api.forms.get(formId);
+      setForm(updatedForm);
+      api.forms.patch(formId, { status: 'draft' });
+    } catch {
+      toast.error('Failed to split question');
     }
   };
 
@@ -232,14 +242,15 @@ export default function BuilderPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Column 1: Left Sidebar (Pages & Endings) */}
         <BuilderLeftSidebar
-          questions={form.questions}
+          pages={form.pages}
           activeItem={activeItem}
           onSelectWelcome={() => setActiveItem('welcome')}
           onSelectEnding={(id) => setActiveItem(id)}
           onSelectQuestion={(id) => setActiveItem(id)}
           onAddQuestion={() => setShowTypePicker(true)}
           onDeleteQuestion={handleDeleteQuestion}
-          onReorderQuestions={handleReorderQuestions}
+          onMoveQuestion={handleMoveQuestion}
+          onSplitPage={handleSplitPage}
         />
 
         {/* Column 2: Center Editor Canvas */}
@@ -248,19 +259,28 @@ export default function BuilderPage() {
           activeItem={activeItem}
           selectedQuestion={selectedQuestion}
           onAddQuestion={() => setShowTypePicker(true)}
+          onSelectQuestion={(id) => setActiveItem(id)}
           onUpdateWelcome={handleUpdateWelcome}
           onUpdateQuestion={handleUpdateQuestion}
           onUpdateThankYou={handleUpdateThankYou}
         />
 
-        {/* Column 3: Right Properties Panel */}
+        {/* Column 3: Right Properties Sidebar */}
         <BuilderRightSidebar
           form={form}
           activeItem={activeItem}
           selectedQuestion={selectedQuestion}
           onUpdateWelcome={handleUpdateWelcome}
-          onUpdateQuestion={handleUpdateQuestion}
+          onUpdateQuestion={(updates) => {
+            if (typeof activeItem === 'number') {
+              handleUpdateQuestion(activeItem, updates);
+            }
+          }}
           onUpdateThankYou={handleUpdateThankYou}
+          onUpdateTheme={(themeUpdates) => {
+            setForm((prev) => (prev ? { ...prev, theme: { ...prev.theme, ...themeUpdates }, status: 'draft' } : null));
+            scheduleFormAutosave({ theme: { ...(form.theme || {}), ...themeUpdates }, status: 'draft' });
+          }}
         />
       </div>
 

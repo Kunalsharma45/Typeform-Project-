@@ -15,7 +15,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response as DRFResponse
 from rest_framework.views import APIView
 
-from .models import Answer, Form, Question, Response
+from .models import Answer, Form, Question, Response, Page
 from .serializers import (
     AnswerSerializer,
     FormDetailSerializer,
@@ -87,20 +87,28 @@ class FormDuplicateView(APIView):
                 welcome_screen=original.welcome_screen,
                 thankyou_screen=original.thankyou_screen,
             )
-            for q in original.questions.all():
-                Question.objects.create(
+            # Duplicate pages and their questions
+            for page in original.pages.all():
+                new_page = Page.objects.create(
                     form=new_form,
-                    type=q.type,
-                    title=q.title,
-                    description=q.description,
-                    order_index=q.order_index,
-                    required=q.required,
-                    options=q.options,
-                    logic=q.logic,
-                    logic_rules=q.logic_rules,
-                    default_next_question_id=q.default_next_question_id,
-                    default_next_is_ending=q.default_next_is_ending,
+                    order_index=page.order_index
                 )
+                for q in page.questions.all():
+                    Question.objects.create(
+                        form=new_form,
+                        page=new_page,
+                        type=q.type,
+                        title=q.title,
+                        description=q.description,
+                        order_index=q.order_index,
+                        order_in_page=q.order_in_page,
+                        required=q.required,
+                        options=q.options,
+                        logic=q.logic,
+                        logic_rules=q.logic_rules,
+                        default_next_question_id=q.default_next_question_id,
+                        default_next_is_ending=q.default_next_is_ending,
+                    )
 
         serializer = FormDetailSerializer(new_form, context={"request": request})
         return DRFResponse(serializer.data, status=status.HTTP_201_CREATED)
@@ -170,7 +178,14 @@ class QuestionListCreateView(APIView):
 
         serializer = QuestionSerializer(data=data, context={"request": request})
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        
+        with transaction.atomic():
+            new_page = Page.objects.create(
+                form=form,
+                order_index=max_index
+            )
+            serializer.save(page=new_page, order_in_page=0)
+            
         return DRFResponse(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -182,21 +197,122 @@ class QuestionDetailView(generics.RetrieveUpdateDestroyAPIView):
     http_method_names = ["get", "patch", "delete", "head", "options"]
 
 
-class QuestionReorderView(APIView):
-    """POST /api/forms/<form_id>/questions/reorder/
-    Body: [{id: int, order_index: int}, ...]
-    """
+class QuestionMoveView(APIView):
+    """POST /api/questions/<id>/move/"""
 
-    def post(self, request, form_id):
-        items = request.data
-        if not isinstance(items, list):
-            return DRFResponse({"detail": "Expected a list."}, status=status.HTTP_400_BAD_REQUEST)
-
+    def post(self, request, pk):
+        try:
+            question = Question.objects.get(pk=pk)
+        except Question.DoesNotExist:
+            return DRFResponse(status=status.HTTP_404_NOT_FOUND)
+        
+        target_page_id = request.data.get("target_page_id")
+        target_question_id = request.data.get("target_question_id")
+        position = request.data.get("position")
+        
         with transaction.atomic():
-            for item in items:
-                Question.objects.filter(pk=item["id"], form_id=form_id).update(
-                    order_index=item["order_index"]
-                )
+            source_page = question.page
+
+            if position == "merge_into" and target_page_id:
+                try:
+                    target_page = Page.objects.get(pk=target_page_id, form=question.form)
+                except Page.DoesNotExist:
+                    return DRFResponse(status=status.HTTP_404_NOT_FOUND)
+                    
+                question.page = target_page
+                max_order = target_page.questions.count()
+                question.order_in_page = max_order
+                question.save(update_fields=['page', 'order_in_page'])
+                
+            elif position in ("before", "after"):
+                if target_question_id:
+                    try:
+                        target_q = Question.objects.get(pk=target_question_id, form=question.form)
+                    except Question.DoesNotExist:
+                        return DRFResponse(status=status.HTTP_404_NOT_FOUND)
+                        
+                    question.page = target_q.page
+                    q_list = list(target_q.page.questions.order_by('order_in_page'))
+                    if question in q_list:
+                        q_list.remove(question)
+                    target_idx = q_list.index(target_q)
+                    if position == "after":
+                        target_idx += 1
+                    q_list.insert(target_idx, question)
+                    
+                    for i, q in enumerate(q_list):
+                        q.order_in_page = i
+                        q.save(update_fields=['order_in_page', 'page'])
+                        
+                elif target_page_id:
+                    try:
+                        target_page = Page.objects.get(pk=target_page_id, form=question.form)
+                    except Page.DoesNotExist:
+                        return DRFResponse(status=status.HTTP_404_NOT_FOUND)
+                        
+                    pages = list(Page.objects.filter(form=question.form).order_by('order_index'))
+                    if source_page in pages:
+                        pages.remove(source_page)
+                    target_idx = pages.index(target_page)
+                    if position == "after":
+                        target_idx += 1
+                    pages.insert(target_idx, source_page)
+                    
+                    for i, p in enumerate(pages):
+                        p.order_index = i
+                        p.save(update_fields=['order_index'])
+                        for q in p.questions.all():
+                            q.order_index = i
+                            q.save(update_fields=['order_index'])
+
+            if source_page and source_page.questions.count() > 0:
+                for i, q in enumerate(source_page.questions.order_by('order_in_page')):
+                    q.order_in_page = i
+                    q.save(update_fields=['order_in_page'])
+            elif source_page and source_page.questions.count() == 0:
+                source_page.delete()
+
+        return DRFResponse({"status": "ok"})
+
+
+class PageSplitView(APIView):
+    """POST /api/pages/<id>/split/"""
+    def post(self, request, pk):
+        question_id = request.data.get("question_id")
+        target_order_index = request.data.get("target_order_index")
+        
+        try:
+            page = Page.objects.get(pk=pk)
+            question = Question.objects.get(pk=question_id, page=page)
+        except (Page.DoesNotExist, Question.DoesNotExist):
+            return DRFResponse(status=status.HTTP_404_NOT_FOUND)
+            
+        with transaction.atomic():
+            if target_order_index is None:
+                target_order_index = page.order_index + 1
+                
+            from django.db.models import F
+            Page.objects.filter(form=page.form, order_index__gte=target_order_index).update(order_index=F('order_index') + 1)
+            
+            new_page = Page.objects.create(
+                form=page.form,
+                order_index=target_order_index
+            )
+            question.page = new_page
+            question.order_in_page = 0
+            question.order_index = target_order_index
+            question.save(update_fields=['page', 'order_in_page', 'order_index'])
+            
+            for i, q in enumerate(page.questions.order_by('order_in_page')):
+                q.order_in_page = i
+                q.save(update_fields=['order_in_page'])
+            
+            if page.questions.count() == 0:
+                page.delete()
+                
+            for p in Page.objects.filter(form=page.form):
+                p.questions.update(order_index=p.order_index)
+                
         return DRFResponse({"status": "ok"})
 
 
@@ -376,8 +492,8 @@ class PublicFormStartView(APIView):
 
 class PublicResponseAnswerView(APIView):
     """POST /api/public/responses/<id>/answer/
-    Upserts a single Answer for the given question.
-    Accepts multipart for file_upload questions.
+    Upserts an array of Answers for the given response's current page.
+    Accepts multipart for file_upload questions (keys like file_123, value_123).
     """
 
     permission_classes = [AllowAny]
@@ -389,42 +505,60 @@ class PublicResponseAnswerView(APIView):
         except Response.DoesNotExist:
             return DRFResponse({"detail": "Response not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        question_id = request.data.get("question_id")
-        value = request.data.get("value")
-        uploaded_file = request.FILES.get("file")
+        answers_data = []
 
-        if question_id is None:
-            return DRFResponse({"detail": "question_id is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            question = Question.objects.get(pk=question_id, form=resp.form)
-        except Question.DoesNotExist:
-            return DRFResponse({"detail": "Question not found on this form."}, status=status.HTTP_404_NOT_FOUND)
-
-        if value is None and not uploaded_file:
-            return DRFResponse({"detail": "value or file is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # For non-file types, parse value from JSON string if needed
-        if isinstance(value, str):
+        # Check if json batch array
+        if "answers" in request.data and isinstance(request.data["answers"], list):
+            answers_data = request.data["answers"]
+        else:
+            # Multipart extraction
             import json
-            try:
-                value = json.loads(value)
-            except (ValueError, TypeError):
-                pass  # keep as string
+            for key, val in request.data.items():
+                if key.startswith("value_"):
+                    qid = key.split("_")[1]
+                    answers_data.append({
+                        "question_id": int(qid),
+                        "value": val,
+                        "file": request.FILES.get(f"file_{qid}")
+                    })
 
-        defaults = {"value": value if value is not None else {}}
-        if uploaded_file:
-            defaults["file"] = uploaded_file
-            defaults["value"] = {"filename": uploaded_file.name}
+        if not answers_data:
+            return DRFResponse({"detail": "No answers provided."}, status=status.HTTP_400_BAD_REQUEST)
 
-        answer, _ = Answer.objects.update_or_create(
-            response=resp,
-            question=question,
-            defaults=defaults,
-        )
+        results = []
+        with transaction.atomic():
+            for item in answers_data:
+                question_id = item.get("question_id")
+                value = item.get("value")
+                uploaded_file = item.get("file")
 
-        serializer = AnswerSerializer(answer, context={"request": request})
-        return DRFResponse(serializer.data, status=status.HTTP_200_OK)
+                if question_id is None:
+                    continue
+
+                try:
+                    question = Question.objects.get(pk=question_id, form=resp.form)
+                except Question.DoesNotExist:
+                    continue
+
+                if isinstance(value, str):
+                    try:
+                        value = json.loads(value)
+                    except (ValueError, TypeError):
+                        pass
+
+                defaults = {"value": value if value is not None else {}}
+                if uploaded_file:
+                    defaults["file"] = uploaded_file
+                    defaults["value"] = {"filename": uploaded_file.name}
+
+                answer, _ = Answer.objects.update_or_create(
+                    response=resp,
+                    question=question,
+                    defaults=defaults,
+                )
+                results.append(AnswerSerializer(answer, context={"request": request}).data)
+
+        return DRFResponse(results, status=status.HTTP_200_OK)
 
 
 class PublicResponseSubmitView(APIView):

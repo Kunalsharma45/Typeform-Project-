@@ -12,7 +12,9 @@ urlpatterns = [
     # ── Creator: Questions ──────────────────────────────────────────────────
     path("forms/<int:form_id>/questions/", views.QuestionListCreateView.as_view(), name="question-list-create"),
     path("questions/<int:pk>/", views.QuestionDetailView.as_view(), name="question-detail"),
-    path("forms/<int:form_id>/questions/reorder/", views.QuestionReorderView.as_view(), name="question-reorder"),
+    path("questions/<int:pk>/move/", views.QuestionMoveView.as_view(), name="question-move"),
+    path("pages/<int:pk>/split/", views.PageSplitView.as_view(), name="page-split"),
+    # path("forms/<int:form_id>/questions/reorder/", views.QuestionReorderView.as_view(), name="question-reorder"), # Deprecated in favor of QuestionMoveView
 
     # ── Creator: Responses & Summary ───────────────────────────────────────
     path("forms/<int:form_id>/responses/", views.ResponseListView.as_view(), name="response-list"),

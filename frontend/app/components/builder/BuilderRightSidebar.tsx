@@ -47,6 +47,7 @@ interface BuilderRightSidebarProps {
   onUpdateWelcome: (welcome: Partial<Form['welcome_screen']>) => void;
   onUpdateQuestion: (updates: Partial<Question>) => void;
   onUpdateThankYou: (thankyou: Partial<Form['thankyou_screen']>) => void;
+  onUpdateTheme: (themeUpdates: Partial<Form['theme']>) => void;
 }
 
 export default function BuilderRightSidebar({
@@ -56,11 +57,12 @@ export default function BuilderRightSidebar({
   onUpdateWelcome,
   onUpdateQuestion,
   onUpdateThankYou,
+  onUpdateTheme,
 }: BuilderRightSidebarProps) {
   const [timeToCompleteToggle, setTimeToCompleteToggle] = useState(!!form.welcome_screen?.time_to_complete);
   const [numSubmissionsToggle, setNumSubmissionsToggle] = useState(!!form.welcome_screen?.show_submission_count);
   const [showWelcomeScreen, setShowWelcomeScreen] = useState(!!form.welcome_screen);
-  const [showThankYouScreen, setShowThankYouScreen] = useState(!!form.thank_you_screen);
+  const [showThankYouScreen, setShowThankYouScreen] = useState(!!form.thankyou_screen);
   
   const [showShapeDropdown, setShowShapeDropdown] = useState(false);
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import toast from 'react-hot-toast';
-import type { Question } from '../../lib/types';
+import type { Page, Question } from '../../lib/types';
 import {
   ChevronDown,
   Plus,
@@ -11,10 +11,12 @@ import {
   GripVertical,
   Sparkles,
   FileText,
+  Unplug, // or some icon for split
 } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
+  pointerWithin,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -22,6 +24,7 @@ import {
   DragEndEvent,
   DragStartEvent,
   DragOverlay,
+  useDroppable,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -33,65 +36,94 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 interface BuilderLeftSidebarProps {
-  questions: Question[];
+  pages: Page[];
   activeItem: 'welcome' | number | string; // 'welcome', 'thankyou-id', or question.id
   onSelectWelcome: () => void;
   onSelectEnding: (id: string) => void;
   onSelectQuestion: (id: number) => void;
   onAddQuestion: () => void;
   onDeleteQuestion: (id: number, e: React.MouseEvent) => void;
-  onReorderQuestions?: (newQuestions: Question[]) => void;
+  onMoveQuestion?: (questionId: number, targetId: number, targetType: 'page' | 'question', position: 'merge_into' | 'before' | 'after') => void;
+  onSplitPage?: (pageId: number, questionId: number) => void;
 }
 
 function QuestionItemUI({
   q,
-  idx,
+  pageIdx,
+  qIdx,
+  totalInPage,
   isSelected,
   onSelect,
   onDelete,
+  onSplit,
   isDragging,
   dragRef,
   style,
   attributes,
   listeners,
 }: any) {
+  const { setNodeRef: setMergeRef, isOver: isMergeOver } = useDroppable({ id: `merge-${q.id}` });
+
   return (
-    <div
-      ref={dragRef}
-      style={style}
-      onClick={() => onSelect(q.id)}
-      {...attributes}
-      {...listeners}
-      className={`group relative flex items-center gap-2 px-2.5 py-2.5 rounded-xl transition-all text-xs ${
-        isSelected
-          ? 'bg-white border-2 border-gray-900 text-gray-900 font-semibold shadow-sm'
-          : 'bg-transparent text-gray-600 hover:bg-gray-100/50'
-      } ${isDragging ? 'shadow-2xl opacity-100 z-[9999] cursor-grabbing bg-white border-2 border-gray-900 scale-105' : 'cursor-pointer'}`}
-    >
-      <div className="hover:bg-gray-200 p-1 rounded -ml-1 transition-colors">
-        <GripVertical className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-500 flex-shrink-0" />
-      </div>
-
-      {/* Numbered Badge */}
-      <div className="w-5 h-5 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center flex-shrink-0 font-bold text-[11px]">
-        {idx + 1}
-      </div>
-
-      <span className="truncate flex-1">
-        {q.title || 'Untitled question...'}
-      </span>
-
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(q.id, e);
-        }}
-        onPointerDown={(e) => e.stopPropagation()}
-        className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-500 transition-opacity"
-        title="Delete question"
+    <div className="relative group">
+      {/* Absolute positioned merge dropzone in the center 60% of the item */}
+      <div 
+        ref={setMergeRef} 
+        className="absolute inset-x-0 top-[20%] bottom-[20%] z-10" 
+      />
+      
+      <div
+        ref={dragRef}
+        style={style}
+        onClick={() => onSelect(q.id)}
+        {...attributes}
+        {...listeners}
+        className={`relative flex items-center gap-2 px-2.5 py-2.5 rounded-xl transition-all text-xs ${
+          isSelected
+            ? 'bg-white border-2 border-gray-900 text-gray-900 font-semibold shadow-sm'
+            : 'bg-transparent text-gray-600 hover:bg-gray-100/50'
+        } ${isDragging ? 'shadow-2xl opacity-100 z-[9999] cursor-grabbing bg-white border-2 border-gray-900 scale-105' : 'cursor-pointer'} ${isMergeOver && !isDragging ? 'ring-2 ring-indigo-500 bg-indigo-50' : ''}`}
       >
-        ×
-      </button>
+        <div className="hover:bg-gray-200 p-1 rounded -ml-1 transition-colors">
+          <GripVertical className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-500 flex-shrink-0" />
+        </div>
+
+        {/* Numbered Badge */}
+        <div className="w-5 h-5 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center flex-shrink-0 font-bold text-[11px]">
+          {pageIdx + 1}{totalInPage > 1 ? String.fromCharCode(97 + qIdx) : ''}
+        </div>
+
+        <span className="truncate flex-1">
+          {q.title || 'Untitled question...'}
+        </span>
+
+        {/* Split button (only show if in a group) */}
+        {totalInPage > 1 && onSplit && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onSplit(q.page, q.id);
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-blue-500 transition-opacity"
+            title="Split out of group"
+          >
+            <Unplug className="w-3.5 h-3.5" />
+          </button>
+        )}
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(q.id, e);
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-500 transition-opacity"
+          title="Delete question"
+        >
+          ×
+        </button>
+      </div>
     </div>
   );
 }
@@ -191,14 +223,15 @@ function SortableEndingItem(props: any) {
 }
 
 export default function BuilderLeftSidebar({
-  questions,
+  pages,
   activeItem,
   onSelectWelcome,
   onSelectEnding,
   onSelectQuestion,
   onAddQuestion,
   onDeleteQuestion,
-  onReorderQuestions,
+  onMoveQuestion,
+  onSplitPage,
 }: BuilderLeftSidebarProps) {
   const [endingsHeight, setEndingsHeight] = useState(120);
   const [activeDragId, setActiveDragId] = useState<number | null>(null);
@@ -227,6 +260,18 @@ export default function BuilderLeftSidebar({
     })
   );
 
+  // Custom collision detection to handle merge zones
+  const customCollisionDetection = (args: any) => {
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) {
+      const mergeCollision = pointerCollisions.find(c => String(c.id).startsWith('merge-'));
+      if (mergeCollision) {
+        return [mergeCollision];
+      }
+    }
+    return closestCenter(args);
+  };
+
   const handleDragStart = (event: DragStartEvent) => {
     setActiveDragId(event.active.id as number);
   };
@@ -234,11 +279,31 @@ export default function BuilderLeftSidebar({
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveDragId(null);
     const { active, over } = event;
-    if (active.id !== over?.id && over && onReorderQuestions) {
-      const oldIndex = questions.findIndex((q) => q.id === active.id);
-      const newIndex = questions.findIndex((q) => q.id === over.id);
-      const newQuestions = arrayMove(questions, oldIndex, newIndex);
-      onReorderQuestions(newQuestions);
+    if (!over || !onMoveQuestion) return;
+    
+    const activeId = active.id as number;
+    const overIdStr = String(over.id);
+    
+    if (overIdStr.startsWith('merge-')) {
+      const targetId = parseInt(overIdStr.replace('merge-', ''), 10);
+      if (activeId !== targetId) {
+        // It's a merge! Find the target question to get its page id.
+        const flatQuestions = pages.flatMap(p => p.questions);
+        const targetQ = flatQuestions.find(q => q.id === targetId);
+        if (targetQ) {
+          onMoveQuestion(activeId, targetQ.page, 'page', 'merge_into');
+        }
+      }
+    } else {
+      const overId = over.id as number;
+      if (activeId !== overId) {
+        // It's a reorder. Find indices in the flat list.
+        const flatQuestions = pages.flatMap(p => p.questions);
+        const oldIndex = flatQuestions.findIndex(q => q.id === activeId);
+        const newIndex = flatQuestions.findIndex(q => q.id === overId);
+        const position = newIndex > oldIndex ? 'after' : 'before';
+        onMoveQuestion(activeId, overId, 'question', position);
+      }
     }
   };
 
@@ -319,34 +384,47 @@ export default function BuilderLeftSidebar({
               </span>
             </div>
 
-            {/* Questions List (Sortable) */}
+            {/* Pages List (Sortable Questions inside Pages) */}
             <DndContext
               sensors={sensors}
-              collisionDetection={closestCenter}
+              collisionDetection={customCollisionDetection}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
             >
               <SortableContext
-                items={questions.map((q) => q.id)}
+                items={pages.flatMap(p => p.questions.map((q) => q.id))}
                 strategy={verticalListSortingStrategy}
               >
-                {questions.map((q, idx) => (
-                  <SortableQuestionItem
-                    key={q.id}
-                    q={q}
-                    idx={idx}
-                    isSelected={activeItem === q.id}
-                    onSelect={onSelectQuestion}
-                    onDelete={onDeleteQuestion}
-                  />
+                {pages.map((page, pIdx) => (
+                  <div key={page.id} className="relative mb-1">
+                    {page.questions.length > 1 && (
+                      <div className="absolute left-3 top-4 bottom-4 w-px bg-gray-300" />
+                    )}
+                    {page.questions.map((q, qIdx) => (
+                      <div key={q.id} className="mb-0.5 relative z-10">
+                        <SortableQuestionItem
+                          q={q}
+                          pageIdx={pIdx}
+                          qIdx={qIdx}
+                          totalInPage={page.questions.length}
+                          isSelected={activeItem === q.id}
+                          onSelect={onSelectQuestion}
+                          onDelete={onDeleteQuestion}
+                          onSplit={onSplitPage}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 ))}
               </SortableContext>
               
               <DragOverlay>
                 {activeDragId ? (
                   <QuestionItemUI
-                    q={questions.find(q => q.id === activeDragId)!}
-                    idx={questions.findIndex(q => q.id === activeDragId)}
+                    q={pages.flatMap(p => p.questions).find(q => q.id === activeDragId)!}
+                    pageIdx={0}
+                    qIdx={0}
+                    totalInPage={1}
                     isSelected={true}
                     onSelect={() => {}}
                     onDelete={() => {}}
