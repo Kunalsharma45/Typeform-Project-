@@ -39,6 +39,7 @@ export default function BuilderTopBar({
   formId,
   formTitle,
   publicSlug,
+  status,
   onTitleChange,
   onPublish,
 }: BuilderTopBarProps) {
