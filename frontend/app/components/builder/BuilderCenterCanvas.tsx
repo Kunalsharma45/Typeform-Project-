@@ -19,6 +19,7 @@ import {
   GripVertical,
   ChevronDown,
   X,
+  UploadCloud,
 } from 'lucide-react';
 import {
   DndContext,
@@ -320,6 +321,16 @@ function QuestionEditorPreview({
         >
           Add choice
         </button>
+      </div>
+    );
+  }
+
+  if (question.type === 'file_upload') {
+    return (
+      <div className="w-full border-2 border-dashed border-gray-300 bg-gray-50 rounded-lg flex flex-col items-center justify-center py-10 cursor-default">
+        <UploadCloud className="w-10 h-10 text-gray-400 mb-2 stroke-[1.5]" />
+        <span className="text-[13px] font-bold text-gray-800">Choose file <span className="font-normal text-gray-600">or drag here</span></span>
+        <span className="text-[11px] text-gray-400 mt-1">Size limit: 10MB</span>
       </div>
     );
   }

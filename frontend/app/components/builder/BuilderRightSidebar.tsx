@@ -229,6 +229,29 @@ export default function BuilderRightSidebar({
                 )}
               </div>
 
+              {/* Extra Settings for File Upload */}
+              {selectedQuestion.type === 'file_upload' && (
+                <div className="pt-2 pb-2">
+                  <div className="text-[13px] font-bold text-gray-800 mb-3">Integrations</div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <svg width="20" height="20" viewBox="0 0 87.3 77.3" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M58.2 77.3 87.3 26.9 58.2 26.9 29.1 77.3z" fill="#2196F3"/>
+                        <path d="M87.3 26.9 58.2 77.3 0 77.3l29.1-50.4z" fill="#4CAF50"/>
+                        <path d="M29.1 77.3 0 26.9l29.1-50.4 58.2 0L58.2 26.9z" fill="#FFC107"/>
+                      </svg>
+                      <span className="text-[13px] text-gray-700 font-medium">Google Drive</span>
+                    </div>
+                    <button 
+                      onClick={showComingSoon}
+                      className="px-3 py-1 bg-gray-800 hover:bg-black text-white text-[11px] font-bold rounded-lg transition-colors cursor-pointer"
+                    >
+                      Connect
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Required Toggle */}
               <div className="flex items-center justify-between">
                 <span className="text-[13px] text-gray-700">Required</span>
