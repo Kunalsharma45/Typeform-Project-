@@ -14,7 +14,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.utils.text import slugify
 
-from forms.models import Answer, Form, Question, Response
+from forms.models import Answer, Form, Page, Question, Response
 
 
 CUSTOMER_FEEDBACK_QUESTIONS = [
@@ -284,13 +284,17 @@ class Command(BaseCommand):
     def _seed_questions(self, form, question_defs):
         if form.questions.exists():
             return
+        # Every question requires a Page (added in migration 0005)
+        page, _ = Page.objects.get_or_create(form=form, order_index=0)
         for idx, qdef in enumerate(question_defs):
             Question.objects.create(
                 form=form,
+                page=page,
                 type=qdef["type"],
                 title=qdef["title"],
                 description=qdef.get("description", ""),
                 order_index=idx,
+                order_in_page=idx,
                 required=qdef.get("required", False),
                 options=qdef.get("options", []),
             )
