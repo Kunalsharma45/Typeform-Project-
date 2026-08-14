@@ -66,7 +66,14 @@ WSGI_APPLICATION = 'myproject.wsgi.application'
 # ── Database ─────────────────────────────────────────────────────────────────
 DATABASE_URL = os.environ.get('DATABASE_URL', '')
 
-if DATABASE_URL:
+if os.environ.get("USE_TURSO", "false").lower() == "true":
+    DATABASES = {
+        "default": {
+            "ENGINE": "libsql.db.backends.sqlite3",
+            "NAME": f"libsql://{os.environ.get('TURSO_DATABASE_URL').replace('libsql://', '')}?authToken={os.environ.get('TURSO_AUTH_TOKEN')}",
+        }
+    }
+elif DATABASE_URL:
     import dj_database_url
     DATABASES = {
         'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
