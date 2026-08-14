@@ -26,8 +26,7 @@ A highly functional Typeform clone built for the SDE Fullstack Assignment, featu
 - gunicorn 23.0.0 & whitenoise 6.8.2 (for deployment)
 
 **Database:**
-- PostgreSQL (via `psycopg2` & `dj-database-url` for production deployment on Render)
-- SQLite (for local development)
+- SQLite (via Django ORM)
 
 ## 4. Setup Instructions
 
