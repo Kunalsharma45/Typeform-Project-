@@ -142,9 +142,12 @@ function QuestionEditorPreview({
   );
 
   if (question.type === 'short_text') {
+    const opts = Array.isArray(question.options) ? question.options : [];
+    const placeholder = opts.find((o: any) => o.id === 'placeholder')?.label || 'Type your answer here...';
+    
     return (
       <div className="w-full border-b border-gray-400 pb-2">
-        <span className="text-gray-300 text-xl">Type your answer here...</span>
+        <span className="text-gray-300 text-xl">{placeholder}</span>
       </div>
     );
   }
