@@ -353,6 +353,25 @@ function QuestionEditorPreview({
     );
   }
 
+  if (question.type === 'yes_no') {
+    return (
+      <div className="w-full flex flex-col gap-2 mt-4 max-w-[280px]">
+        <div className="flex items-center gap-3 bg-gray-100/80 rounded-lg px-3 py-2.5 cursor-pointer hover:bg-gray-200 transition-colors">
+          <div className="w-5 h-5 flex items-center justify-center bg-white border border-gray-300 rounded text-[11px] font-bold text-gray-700 shadow-sm">
+            Y
+          </div>
+          <span className="text-[14px] font-medium text-gray-800">Yes</span>
+        </div>
+        <div className="flex items-center gap-3 bg-gray-100/80 rounded-lg px-3 py-2.5 cursor-pointer hover:bg-gray-200 transition-colors">
+          <div className="w-5 h-5 flex items-center justify-center bg-white border border-gray-300 rounded text-[11px] font-bold text-gray-700 shadow-sm">
+            N
+          </div>
+          <span className="text-[14px] font-medium text-gray-800">No</span>
+        </div>
+      </div>
+    );
+  }
+
   // Default fallback
   return (
     <div className="w-full border-b border-gray-400 pb-2">
