@@ -72,7 +72,7 @@ const QuestionNode = memo(function QuestionNode({ data, selected }: NodeProps) {
     <div
       title={question.title || 'Untitled question'}
       style={{
-        width: 150,
+        width: 240,
         height: 44,
         borderRadius: 10,
         background: '#ffffff',

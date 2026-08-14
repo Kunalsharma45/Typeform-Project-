@@ -25,7 +25,7 @@ import CanvasControls from './CanvasControls';
 import PullDataPanel from './PullDataPanel';
 
 // ── Dagre auto-layout ─────────────────────────────────────────────────────────
-const NODE_WIDTH = 150;
+const NODE_WIDTH = 240;
 const NODE_HEIGHT = 44;
 const ENDING_WIDTH = 120;
 const ENDING_HEIGHT = 40;
