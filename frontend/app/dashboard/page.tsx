@@ -29,6 +29,7 @@ export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'created_at' | 'updated_at'>('created_at');
   const [isSortOpen, setIsSortOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   // Modal States
   const [creating, setCreating] = useState(false);
@@ -266,7 +267,12 @@ export default function DashboardPage() {
                 {/* List / Grid Toggle */}
                 <div className="flex items-center border border-gray-200 rounded-md overflow-hidden bg-white ml-2">
                   <button
-                    className="px-3 py-2 text-[15px] font-medium text-gray-900 bg-gray-100 flex items-center gap-1 border-r border-gray-200"
+                    onClick={() => setViewMode('list')}
+                    className={`px-3 py-2 text-[15px] font-medium flex items-center gap-1 border-r border-gray-200 transition-colors ${
+                      viewMode === 'list'
+                        ? 'text-gray-900 bg-gray-100'
+                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
                     title="List view"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 16 16">
@@ -275,8 +281,12 @@ export default function DashboardPage() {
                     List
                   </button>
                   <button
-                    onClick={showComingSoon}
-                    className="px-3 py-2 text-[15px] font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors flex items-center gap-1"
+                    onClick={() => setViewMode('grid')}
+                    className={`px-3 py-2 text-[15px] font-medium transition-colors flex items-center gap-1 ${
+                      viewMode === 'grid'
+                        ? 'text-gray-900 bg-gray-100'
+                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
                     title="Grid view"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 16 16">
@@ -303,6 +313,7 @@ export default function DashboardPage() {
             ) : (
               <FormsTable
                 forms={filteredForms}
+                viewMode={viewMode}
                 onEdit={(id) => router.push(`/forms/${id}/edit`)}
                 onDuplicate={handleDuplicate}
                 onDelete={(form) => setDeleteTarget(form)}
