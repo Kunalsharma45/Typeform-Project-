@@ -97,16 +97,16 @@ export default function BuilderPage() {
 
   // Handlers
   const handleTitleChange = (newTitle: string) => {
-    setForm((prev) => (prev ? { ...prev, title: newTitle } : null));
-    scheduleFormAutosave({ title: newTitle });
+    setForm((prev) => (prev ? { ...prev, title: newTitle, status: 'draft' } : null));
+    scheduleFormAutosave({ title: newTitle, status: 'draft' });
   };
 
   const handleUpdateWelcome = (welcomeUpdates: Partial<Form['welcome_screen']>) => {
     setForm((prev) => {
       if (!prev) return prev;
       const updatedWelcome = { ...prev.welcome_screen, ...welcomeUpdates };
-      scheduleFormAutosave({ welcome_screen: updatedWelcome });
-      return { ...prev, welcome_screen: updatedWelcome };
+      scheduleFormAutosave({ welcome_screen: updatedWelcome, status: 'draft' });
+      return { ...prev, welcome_screen: updatedWelcome, status: 'draft' };
     });
   };
 
@@ -114,8 +114,8 @@ export default function BuilderPage() {
     setForm((prev) => {
       if (!prev) return prev;
       const updatedThankYou = { ...prev.thankyou_screen, ...thankyouUpdates };
-      scheduleFormAutosave({ thankyou_screen: updatedThankYou });
-      return { ...prev, thankyou_screen: updatedThankYou };
+      scheduleFormAutosave({ thankyou_screen: updatedThankYou, status: 'draft' });
+      return { ...prev, thankyou_screen: updatedThankYou, status: 'draft' };
     });
   };
 
@@ -125,12 +125,14 @@ export default function BuilderPage() {
       if (!prev) return prev;
       return {
         ...prev,
+        status: 'draft',
         questions: prev.questions.map((q) =>
           q.id === activeItem ? { ...q, ...updates } : q
         ),
       };
     });
     scheduleQuestionAutosave(activeItem, updates);
+    scheduleFormAutosave({ status: 'draft' });
   };
 
   const handleAddQuestion = async (type: QuestionType) => {
@@ -155,8 +157,9 @@ export default function BuilderPage() {
       });
 
       setForm((prev) =>
-        prev ? { ...prev, questions: [...prev.questions, q] } : prev
+        prev ? { ...prev, status: 'draft', questions: [...prev.questions, q] } : prev
       );
+      api.forms.patch(formId, { status: 'draft' });
       setActiveItem(q.id);
     } catch {
       toast.error('Failed to add question');
@@ -170,8 +173,9 @@ export default function BuilderPage() {
       setForm((prev) => {
         if (!prev) return prev;
         const remaining = prev.questions.filter((q) => q.id !== qId);
-        return { ...prev, questions: remaining };
+        return { ...prev, status: 'draft', questions: remaining };
       });
+      api.forms.patch(formId, { status: 'draft' });
       if (activeItem === qId) {
         setActiveItem('welcome');
       }
@@ -182,7 +186,8 @@ export default function BuilderPage() {
 
   const handleReorderQuestions = async (newQuestions: Question[]) => {
     // Optimistic update
-    setForm((prev) => (prev ? { ...prev, questions: newQuestions } : prev));
+    setForm((prev) => (prev ? { ...prev, status: 'draft', questions: newQuestions } : prev));
+    api.forms.patch(formId, { status: 'draft' });
     
     // Format for API
     const items = newQuestions.map((q, idx) => ({
@@ -220,6 +225,7 @@ export default function BuilderPage() {
         publicSlug={form.public_slug}
         status={form.status}
         onTitleChange={handleTitleChange}
+        onPublish={(updatedForm) => setForm(updatedForm)}
       />
 
       {/* Main Workspace (Three Columns) */}

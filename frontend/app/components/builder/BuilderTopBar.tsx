@@ -32,6 +32,7 @@ interface BuilderTopBarProps {
   publicSlug?: string | null;
   status?: 'draft' | 'published';
   onTitleChange?: (newTitle: string) => void;
+  onPublish?: (updatedForm: any) => void;
 }
 
 export default function BuilderTopBar({
@@ -39,6 +40,7 @@ export default function BuilderTopBar({
   formTitle,
   publicSlug,
   onTitleChange,
+  onPublish,
 }: BuilderTopBarProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -70,9 +72,13 @@ export default function BuilderTopBar({
   const handlePublish = async () => {
     try {
       setIsPublishing(true);
-      await api.forms.publish(formId);
+      const updatedForm = await api.forms.publish(formId);
       toast.success('Form published successfully!');
-      window.location.reload();
+      if (onPublish) {
+        onPublish(updatedForm);
+      } else {
+        window.location.reload();
+      }
     } catch (e) {
       toast.error('Failed to publish form');
     } finally {
