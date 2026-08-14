@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import type { Question, QuestionOption } from '../lib/types';
+import RatingIcon from './RatingIcon';
 
 export type RendererMode = 'preview' | 'respondent';
 
@@ -184,22 +185,45 @@ function QuestionRendererInner({
 
   // ── Short Text ──────────────────────────────────────────────────────────
   if (question.type === 'short_text' || question.type === 'email') {
+    const opts = Array.isArray(question.options) ? question.options : [];
+    const maxCharsStr = opts.find((o: any) => o.id === 'max_chars')?.label;
+    const maxChars = maxCharsStr && !isNaN(parseInt(maxCharsStr, 10)) ? parseInt(maxCharsStr, 10) : undefined;
+    const customPlaceholder = opts.find((o: any) => o.id === 'placeholder')?.label;
+    const validationOpt = opts.find((o: any) => o.id === 'validation')?.label;
+    
+    // Determine input type based on validation or question type
+    let inputType = question.type === 'email' ? 'email' : 'text';
+    if (question.type === 'short_text' && validationOpt) {
+      if (validationOpt === 'number') inputType = 'number';
+      else if (validationOpt === 'email') inputType = 'email';
+      else if (validationOpt === 'url') inputType = 'url';
+    }
+
+    const placeholder = customPlaceholder || (inputType === 'email' ? 'name@example.com' : 'Type your answer here...');
+
     return (
       <div className="w-full">
         <QuestionTitle question={question} questionNumber={questionNumber} />
         <div className="relative mt-6">
           <input
             ref={inputRef as React.Ref<HTMLInputElement>}
-            type={question.type === 'email' ? 'email' : 'text'}
+            type={inputType}
+            maxLength={maxChars}
             className="w-full bg-transparent border-0 border-b-2 text-xl py-3 px-0 outline-none transition-all duration-200"
             style={{
               borderColor: focused ? accent : '#e5e7eb',
               color: '#111827',
               fontFamily: 'Inter, system-ui, sans-serif',
             }}
-            placeholder={question.type === 'email' ? 'name@example.com' : 'Type your answer here...'}
-            value={typeof value === 'string' ? value : ''}
-            onChange={(e) => onChange?.(e.target.value)}
+            placeholder={placeholder}
+            value={typeof value === 'string' ? value : typeof value === 'number' ? String(value) : ''}
+            onChange={(e) => {
+              if (maxChars && e.target.value.length > maxChars) {
+                onChange?.(e.target.value.slice(0, maxChars));
+              } else {
+                onChange?.(e.target.value);
+              }
+            }}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             onKeyDown={handleEnter}
@@ -423,6 +447,9 @@ function QuestionRendererInner({
   if (question.type === 'rating') {
     const max = getRatingMax(question);
     const numVal = typeof value === 'number' ? value : null;
+    
+    const opts = Array.isArray(question.options) ? question.options : [];
+    const shape = opts.find((o: any) => o.id === 'shape')?.label || 'star';
 
     const handleRating = (n: number) => {
       if (!isRespondent) return;
@@ -444,28 +471,30 @@ function QuestionRendererInner({
     return (
       <div className="w-full">
         <QuestionTitle question={question} questionNumber={questionNumber} />
-        <div className="mt-6">
-          <div className="flex gap-2 flex-wrap">
+        <div className="mt-6 flex flex-col items-start gap-4">
+          <div className="flex gap-4 flex-wrap">
             {Array.from({ length: max }, (_, i) => i + 1).map((n) => {
               const isSelected = numVal !== null && n <= numVal;
               const isExact = numVal === n;
               return (
-                <button
-                  key={n}
-                  id={`rating-${question.id}-${n}`}
-                  onClick={() => handleRating(n)}
-                  className="w-12 h-12 rounded-xl border-2 font-bold text-lg transition-all duration-150"
-                  style={{
-                    borderColor: isSelected ? accent : '#e5e7eb',
-                    background: isSelected ? accent : '#fff',
-                    color: isSelected ? '#fff' : '#9ca3af',
-                    cursor: isRespondent ? 'pointer' : 'default',
-                    transform: isExact ? 'scale(1.15)' : 'scale(1)',
-                    boxShadow: isExact ? `0 0 0 4px ${accentLight}` : 'none',
-                  }}
-                >
-                  {n}
-                </button>
+                <div key={n} className="flex flex-col items-center gap-2">
+                  <button
+                    id={`rating-${question.id}-${n}`}
+                    onClick={() => handleRating(n)}
+                    className="transition-all duration-150 outline-none flex items-center justify-center"
+                    style={{
+                      color: isSelected ? accent : '#e5e7eb',
+                      cursor: isRespondent ? 'pointer' : 'default',
+                      transform: isExact ? 'scale(1.15)' : 'scale(1)',
+                    }}
+                  >
+                    <RatingIcon 
+                      shape={shape} 
+                      className={`w-10 h-10 stroke-[1.5] transition-colors ${isSelected ? 'fill-current' : 'fill-transparent hover:fill-gray-100 hover:text-gray-400'}`} 
+                    />
+                  </button>
+                  <span className="text-sm font-semibold text-gray-500">{n}</span>
+                </div>
               );
             })}
           </div>

@@ -22,6 +22,8 @@ import {
   UploadCloud,
   Star,
 } from 'lucide-react';
+import RatingIcon from '../RatingIcon';
+
 import {
   DndContext,
   closestCenter,
@@ -342,13 +344,14 @@ function QuestionEditorPreview({
   if (question.type === 'rating') {
     const opts = Array.isArray(question.options) ? question.options : [];
     const max = parseInt(opts.find((o: any) => o.id === 'max')?.label || '5', 10);
+    const shape = opts.find((o: any) => o.id === 'shape')?.label || 'star';
     const stars = Array.from({ length: max }, (_, i) => i + 1);
 
     return (
       <div className="w-full flex items-center gap-4 mt-6">
         {stars.map((num) => (
           <div key={num} className="flex flex-col items-center gap-2">
-            <Star className="w-10 h-10 text-gray-800 stroke-[1] cursor-pointer hover:fill-gray-100 transition-colors" />
+            <RatingIcon shape={shape} className="w-10 h-10 text-gray-800 stroke-[1] cursor-pointer hover:fill-gray-100 transition-colors" />
             <span className="text-[13px] font-semibold text-gray-600">{num}</span>
           </div>
         ))}

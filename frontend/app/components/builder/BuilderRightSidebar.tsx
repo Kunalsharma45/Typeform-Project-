@@ -19,6 +19,7 @@ import {
   Star,
   Upload,
 } from 'lucide-react';
+import RatingIcon, { RATING_SHAPES } from '../RatingIcon';
 
 const QUESTION_TYPES: { type: QuestionType; label: string; icon: React.ReactNode; color: string }[] = [
   { type: 'short_text', label: 'Short Text', icon: <Type className="w-3.5 h-3.5" />, color: 'bg-indigo-100 text-indigo-600' },
@@ -58,6 +59,10 @@ export default function BuilderRightSidebar({
 }: BuilderRightSidebarProps) {
   const [timeToCompleteToggle, setTimeToCompleteToggle] = useState(false);
   const [numSubmissionsToggle, setNumSubmissionsToggle] = useState(false);
+  const [showWelcomeScreen, setShowWelcomeScreen] = useState(!!form.welcome_screen);
+  const [showThankYouScreen, setShowThankYouScreen] = useState(!!form.thank_you_screen);
+  
+  const [showShapeDropdown, setShowShapeDropdown] = useState(false);
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [maxCharsToggle, setMaxCharsToggle] = useState(false);
@@ -280,7 +285,7 @@ export default function BuilderRightSidebar({
                           const opts = Array.isArray(selectedQuestion.options) ? selectedQuestion.options : [];
                           return opts.find((o: any) => o.id === 'max')?.label || '5';
                         })()}
-                        onChange={(e) => onUpdateQuestion({ options: [{ id: 'max', label: e.target.value }] })}
+                        onChange={(e) => onUpdateQuestion({ options: [{ id: 'max', label: e.target.value }, ...((Array.isArray(selectedQuestion.options) ? selectedQuestion.options : []).filter(o => o.id !== 'max'))] })}
                       >
                         {[3, 4, 5, 6, 7, 8, 9, 10].map(n => (
                           <option key={n} value={n}>{n}</option>
@@ -288,13 +293,51 @@ export default function BuilderRightSidebar({
                       </select>
                       <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
-                    <button 
-                      onClick={showComingSoon}
-                      className="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2 flex items-center justify-between hover:bg-gray-50 transition-colors shadow-sm cursor-pointer"
-                    >
-                      <Star className="w-4 h-4 text-gray-600 stroke-[1.5]" />
-                      <ChevronDown className="w-4 h-4 text-gray-400" />
-                    </button>
+                    
+                    <div className="relative flex-1">
+                      <button 
+                        onClick={() => setShowShapeDropdown(!showShapeDropdown)}
+                        className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 flex items-center justify-between hover:bg-gray-50 transition-colors shadow-sm cursor-pointer"
+                      >
+                        <RatingIcon 
+                          shape={(() => {
+                            const opts = Array.isArray(selectedQuestion.options) ? selectedQuestion.options : [];
+                            return opts.find((o: any) => o.id === 'shape')?.label || 'star';
+                          })()}
+                          className="w-4 h-4 text-gray-600 stroke-[1.5]"
+                        />
+                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                      </button>
+                      
+                      {showShapeDropdown && (
+                        <div className="absolute top-full right-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-[9999] p-3">
+                          <div className="grid grid-cols-5 gap-2">
+                            {RATING_SHAPES.map((s) => {
+                              const isSelected = (() => {
+                                const opts = Array.isArray(selectedQuestion.options) ? selectedQuestion.options : [];
+                                const currentShape = opts.find((o: any) => o.id === 'shape')?.label || 'star';
+                                return currentShape === s.id;
+                              })();
+                              
+                              return (
+                                <button
+                                  key={s.id}
+                                  onClick={() => {
+                                    const opts = Array.isArray(selectedQuestion.options) ? selectedQuestion.options : [];
+                                    const filteredOpts = opts.filter((o: any) => o.id !== 'shape');
+                                    onUpdateQuestion({ options: [...filteredOpts, { id: 'shape', label: s.id }] });
+                                    setShowShapeDropdown(false);
+                                  }}
+                                  className={`aspect-square flex items-center justify-center rounded-lg transition-colors hover:bg-gray-100 ${isSelected ? 'bg-indigo-50 border border-indigo-200 text-indigo-600' : 'text-gray-600'}`}
+                                >
+                                  <s.icon className="w-5 h-5 stroke-[1.5]" />
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between">
