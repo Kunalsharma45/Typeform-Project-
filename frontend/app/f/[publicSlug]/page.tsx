@@ -535,6 +535,7 @@ export default function PublicFormPage() {
                       questionNumber={pageIndex + 1}
                       questionLetter={currentPage.questions.length > 1 ? String.fromCharCode(97 + idx) : undefined}
                       accentColor={accent}
+                      hideSubmitButton={currentPage.questions.length > 1}
                     />
                   </div>
                 ))}

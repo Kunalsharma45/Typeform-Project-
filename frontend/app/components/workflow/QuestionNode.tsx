@@ -109,6 +109,23 @@ const QuestionNode = memo(function QuestionNode({ data, selected }: NodeProps) {
         {cfg.icon}
       </div>
 
+      {/* Middle: question text */}
+      <div
+        style={{
+          flex: 1,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          fontSize: 12,
+          fontWeight: 600,
+          color: '#374151',
+          marginLeft: 8,
+          marginRight: 8,
+        }}
+      >
+        {question.title || 'Untitled'}
+      </div>
+
       {/* Right: question number badge */}
       <div
         style={{

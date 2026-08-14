@@ -16,6 +16,7 @@ interface QuestionRendererProps {
   questionNumber?: number;
   questionLetter?: string;
   accentColor?: string;
+  hideSubmitButton?: boolean;
 }
 
 const LETTER_KEYS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -47,7 +48,7 @@ const COUNTRIES = [
 
 function PhoneNumberRenderer({
   question, mode, value, onChange, onSubmit, error, questionNumber, questionLetter, accentColor = '#6366f1',
-  focused, setFocused, handleEnter, isRespondent, inputRef
+  focused, setFocused, handleEnter, isRespondent, inputRef, hideSubmitButton
 }: any) {
   const defaultCountryCode = getOptions(question).find((o) => o.id === 'country')?.label || 'US';
   const [selectedCountry, setSelectedCountry] = useState(defaultCountryCode);
@@ -138,7 +139,7 @@ function PhoneNumberRenderer({
         </div>
       </div>
       {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
-      {isRespondent && (
+      {isRespondent && !hideSubmitButton && (
         <div className="mt-4">
           <button
             className="btn btn-primary btn-sm"
@@ -163,6 +164,7 @@ function QuestionRendererInner({
   questionNumber,
   questionLetter,
   accentColor = '#6366f1',
+  hideSubmitButton = false,
 }: QuestionRendererProps) {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const [focused, setFocused] = useState(false);
@@ -237,7 +239,7 @@ function QuestionRendererInner({
           />
         </div>
         {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
-        {isRespondent && (
+        {isRespondent && !hideSubmitButton && (
           <div className="mt-4">
             <button
               className="btn btn-primary btn-sm"
@@ -286,12 +288,12 @@ function QuestionRendererInner({
           />
         </div>
         {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
-        {isRespondent && (
+        {isRespondent && !hideSubmitButton && (
           <p className="mt-2 text-sm text-gray-400">
             Press <kbd className="px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">↵</kbd> for a new line, or <kbd className="px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">Ctrl ↵</kbd> to submit
           </p>
         )}
-        {isRespondent && (
+        {isRespondent && !hideSubmitButton && (
           <div className="mt-4">
             <button
               className="btn btn-primary btn-sm"
@@ -310,7 +312,7 @@ function QuestionRendererInner({
   if (question.type === 'number') {
     return (
       <PhoneNumberRenderer 
-        {...{ question, mode, value, onChange, onSubmit, error, questionNumber, questionLetter, accentColor, focused, setFocused, handleEnter, isRespondent, inputRef }} 
+        {...{ question, mode, value, onChange, onSubmit, error, questionNumber, questionLetter, accentColor, focused, setFocused, handleEnter, isRespondent, inputRef, hideSubmitButton }} 
       />
     );
   }
