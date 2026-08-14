@@ -1,246 +1,147 @@
-# Typeform Clone — Fullstack Assignment
+# Typeform Clone
 
-A functional [Typeform](https://www.typeform.com) clone built as a fullstack SDE assignment. Features a beautiful form builder with drag-and-drop, a one-question-at-a-time respondent flow with Framer Motion transitions, and a results analytics dashboard.
+A highly functional Typeform clone built for the SDE Fullstack Assignment, featuring a beautiful drag-and-drop form builder, dynamic logic branching, and a seamless one-question-at-a-time respondent flow.
 
----
+## 2. Live Demo & Repo Links
 
-## Tech Stack
+- **Frontend URL:** `[Deployment pending]` (Configured for Vercel, waiting for live deployment)
+- **Backend API:** `[Deployment pending]` (Configured for Render, used internally by the frontend)
 
-| Layer | Technology |
-|---|---|
-| Frontend | Next.js 16.3 (App Router, TypeScript, Tailwind CSS v4) |
-| Backend | Django 6.1 + Django REST Framework 3.18 |
-| Database | SQLite (via Django ORM) |
-| CORS | django-cors-headers 4.9 |
-| Drag & Drop | @dnd-kit/core + @dnd-kit/sortable |
-| Animations | Framer Motion |
-| Charts | Recharts |
-| Toasts | react-hot-toast |
-| Fonts | Inter + DM Serif Display (via next/font/google) |
+## 3. Tech Stack
 
----
+**Frontend:**
+- Next.js 16.3.0 (App Router)
+- React 19.2.8, TypeScript
+- Tailwind CSS v4
+- Framer Motion 13.1.0 (for smooth transitions)
+- @dnd-kit/core & @dnd-kit/sortable (for drag-and-drop reordering)
+- Recharts 3.10.1 (for results analytics)
+- lucide-react 1.31.0 (for icons)
+- react-hot-toast 2.6.0 (for notifications)
 
-## Setup Instructions
+**Backend:**
+- Django 6.1
+- Django REST Framework 3.18.0
+- django-cors-headers 4.9.0
+- gunicorn 23.0.0 & whitenoise 6.8.2 (for deployment)
 
-### Prerequisites
-- Python 3.13 with `venv`
-- Node.js 18+ with npm
+**Database:**
+- SQLite (via Django ORM)
 
-### Backend
+## 4. Setup Instructions
 
 ```bash
-# From repo root
-cd backend
-
-# Activate virtual environment
-# Windows:
-venv\Scripts\activate
-# macOS/Linux:
-source venv/bin/activate
-
-# Install dependencies
+# Backend
+cd backend/myproject
+python -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # macOS/Linux
 pip install -r requirements.txt
-
-# Run migrations
-cd myproject
 python manage.py migrate
-
-# Seed sample data (creates 2 published forms + 1 draft + responses)
 python manage.py seed
-
-# Start development server (port 8000)
 python manage.py runserver
 ```
 
-**Admin panel**: http://localhost:8000/admin/
-- Create a superuser first: `python manage.py createsuperuser`
-
-### Frontend
-
 ```bash
-# From repo root
+# Frontend (separate terminal)
 cd frontend
-
-# Install dependencies
 npm install
-
-# Create environment file
-echo "NEXT_PUBLIC_API_BASE=http://localhost:8000" > .env.local
-
-# Start development server (port 3000)
+# Create .env.local with the following line:
+# NEXT_PUBLIC_API_BASE=http://localhost:8000
 npm run dev
 ```
 
-Open http://localhost:3000 — it redirects to `/dashboard`.
+- **Default Ports:** Backend API runs on `8000`, Frontend runs on `3000`.
+- **Seeded Data:** Running `python manage.py seed` populates the database with 2 published forms, 1 draft form, and a set of sample responses. This command can be safely re-run to reset to the original sample data. 
+- **Creator Authentication:** A default creator user is automatically seeded. No login is required.
 
-### Default Ports
-| Service | URL |
-|---|---|
-| Frontend | http://localhost:3000 |
-| Backend API | http://localhost:8000/api/ |
-| Django Admin | http://localhost:8000/admin/ |
+## 5. Architecture Overview
 
-### Default Seed Data Credentials
-- **Creator username**: `creator`
-- **Creator password**: `creator123`
-- **Form 1 (published)**: Customer Feedback Survey
-- **Form 2 (published)**: Job Application — Frontend Engineer
-- **Form 3 (draft)**: Product Onboarding Survey
+The application is structured as a decoupled fullstack monolith:
+- A Next.js frontend handles routing, state, and UI.
+- A Django REST Framework backend serves as the single source of truth over a REST API.
+- All requests between them are routed through a centralized API client (`frontend/app/lib/api.ts`).
 
----
+There are two primary distinct frontend experiences that share the same backend data models:
+1. **The Creator Side:** The authenticated-by-default builder experience (Dashboard, Form Builder, Logic Map, Results). Creator authentication is intentionally simplified per the assignment requirements (a single default creator is used, and no login/registration UI exists).
+2. **The Public Respondent Side:** The `/f/[publicSlug]` route. This is accessible without authentication (`AllowAny` permission) and serves the form fill experience.
 
-## Architecture Overview
+A shared `QuestionRenderer` component pattern is used to render the exact same question UI inside the builder's live preview and the actual respondent flow, parameterized by an active "mode" to handle interactions differently depending on context.
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Browser (Next.js 16)                  │
-│  /dashboard  /forms/:id/edit  /forms/:id/results  /f/:slug │
-│                                                          │
-│  app/lib/api.ts ── all API calls centralized here       │
-│  app/lib/types.ts ── TypeScript interfaces               │
-│  app/components/QuestionRenderer.tsx ── shared component │
-│         (used in both builder preview + respondent flow) │
-└──────────────────────┬──────────────────────────────────┘
-                       │ HTTP (CORS-enabled)
-                       │ http://localhost:8000/api/
-┌──────────────────────▼──────────────────────────────────┐
-│                   Django 6.1 + DRF                       │
-│  forms/                                                  │
-│  ├── models.py      (Form, Question, Response, Answer)   │
-│  ├── serializers.py (FormList, FormDetail, Question, ...) │
-│  ├── views.py       (creator + public APIViews)          │
-│  ├── urls.py        (all route mappings)                 │
-│  └── management/commands/seed.py                        │
-│                           │                              │
-│                    SQLite (db.sqlite3)                   │
-└─────────────────────────────────────────────────────────┘
-```
+## 6. Database Schema
 
-**Communication**: The Next.js frontend calls the Django API exclusively through `app/lib/api.ts`. CORS is configured to allow `http://localhost:3000`. No server-side rendering of data — all pages are Client Components that fetch on mount.
+| Model | Key Fields | Relationships |
+|-------|------------|---------------|
+| **Form** | `status`, `public_slug`, `theme`, `welcome_screen`, `thankyou_screen` | `owner` → `User` (FK, Cascade) |
+| **Question** | `type`, `order_index`, `required`, `options`, `logic_rules`, `default_next_question_id`, `default_next_is_ending` | `form` → `Form` (FK, Cascade) |
+| **Response** | `status` (partial/completed), `started_at`, `completed_at`, `respondent_meta` | `form` → `Form` (FK, Cascade) |
+| **Answer** | `value`, `file` | `response` → `Response` (FK, Cascade)<br>`question` → `Question` (FK, Cascade) |
 
----
+- **Relationships are strictly enforced** via `on_delete=models.CASCADE`.
+- **Unique Constraint:** The `Answer` model enforces a `unique_together = ("response", "question")` constraint, ensuring one answer per question per response. This allows for safe upsert-style autosaving.
 
-## Database Schema
+## 7. API Overview
 
-### Tables & Relationships
-
-```
-auth_user (Django built-in)
-  └── forms_form (owner → User)
-        └── forms_question (form → Form)
-        └── forms_response (form → Form)
-              └── forms_answer (response → Response, question → Question)
+**Creator-side**
+```text
+GET/POST          /api/forms/                               List / create forms
+GET/PATCH/DELETE  /api/forms/<id>/                          Retrieve / update / delete a form
+POST              /api/forms/<id>/duplicate/                Duplicate a form
+POST              /api/forms/<id>/publish/                  Publish (generates public_slug)
+POST              /api/forms/<id>/unpublish/                Unpublish
+GET/POST          /api/forms/<form_id>/questions/           List / create questions
+GET/PATCH/DELETE  /api/questions/<id>/                      Retrieve / update / delete a question
+POST              /api/forms/<form_id>/questions/reorder/   Reorder questions
+GET               /api/forms/<form_id>/responses/           List form responses
+GET               /api/forms/<form_id>/responses/export/    Export responses as CSV
+GET               /api/forms/<form_id>/summary/             Get form analytics summary
+GET               /api/responses/<id>/                      Retrieve single response
+GET               /api/forms/<form_id>/logic-map/           Fetch branch logic map
+PATCH             /api/questions/<id>/logic/                Update logic branching rules
+DELETE            /api/questions/<id>/logic/<rule_id>/      Delete a logic branching rule
 ```
 
-### forms_form
-| Field | Type | Notes |
-|---|---|---|
-| id | INTEGER PK | |
-| owner_id | FK → auth_user | |
-| title | VARCHAR(255) | |
-| description | TEXT | |
-| status | VARCHAR(10) | `draft` / `published` |
-| public_slug | SLUG (unique) | Set on publish |
-| theme | JSON | `{accent_color, background}` |
-| welcome_screen | JSON | `{title, description, button_text}` |
-| thankyou_screen | JSON | `{title, description}` |
-| created_at / updated_at | DATETIME | |
-
-### forms_question
-| Field | Type | Notes |
-|---|---|---|
-| id | INTEGER PK | |
-| form_id | FK → forms_form | Cascade delete |
-| type | VARCHAR(20) | One of 9 types (see below) |
-| title | VARCHAR(500) | |
-| description | VARCHAR(500) | Help text |
-| order_index | INTEGER | Used for ordering |
-| required | BOOLEAN | |
-| options | JSON | `[{id, label}]` for choice types; `{max: N}` for rating |
-| logic | JSON | `{if_option_id, goto_question_id}` for branching |
-
-**Question types**: `short_text`, `long_text`, `multiple_choice`, `dropdown`, `email`, `number`, `yes_no`, `rating`, `file_upload`
-
-### forms_response
-| Field | Type | Notes |
-|---|---|---|
-| id | INTEGER PK | |
-| form_id | FK → forms_form | |
-| status | VARCHAR(10) | `partial` / `completed` |
-| started_at | DATETIME | auto_now_add |
-| completed_at | DATETIME | Set on submit |
-| respondent_meta | JSON | `{user_agent}` |
-
-### forms_answer
-| Field | Type | Notes |
-|---|---|---|
-| id | INTEGER PK | |
-| response_id | FK → forms_response | |
-| question_id | FK → forms_question | |
-| value | JSON | String / number / boolean / `{selected_option_id}` |
-| file | FileField | Only for `file_upload` questions |
-| created_at | DATETIME | |
-| UNIQUE | (response_id, question_id) | Enables upsert autosave |
-
----
-
-## API Overview
-
-Base path: `/api/`
-
-### Creator — Forms
-```
-GET    /api/forms/                        List all forms (paginated)
-POST   /api/forms/                        Create new draft form
-GET    /api/forms/{id}/                   Get form with questions
-PATCH  /api/forms/{id}/                   Update form fields
-DELETE /api/forms/{id}/                   Delete form (cascades)
-POST   /api/forms/{id}/duplicate/         Deep-copy form + questions
-POST   /api/forms/{id}/publish/           Set status=published, generate slug
-POST   /api/forms/{id}/unpublish/         Set status=draft
+**Public (no auth)**
+```text
+GET               /api/public/forms/<slug>/                 Fetch a published form
+POST              /api/public/forms/<slug>/start/           Start a response session
+POST              /api/public/responses/<id>/answer/        Autosave an answer
+POST              /api/public/responses/<id>/submit/        Validate + finalize submission
 ```
 
-### Creator — Questions
-```
-POST   /api/forms/{id}/questions/         Add question (appends to end)
-PATCH  /api/questions/{id}/               Edit question
-DELETE /api/questions/{id}/               Delete question
-POST   /api/forms/{id}/questions/reorder/ Bulk reorder [{id, order_index}]
-```
+## 8. Features Implemented
 
-### Creator — Responses & Analytics
-```
-GET    /api/forms/{id}/responses/         List responses (paginated)
-GET    /api/responses/{id}/               Full response with answers
-GET    /api/forms/{id}/summary/           Per-question aggregates + completion rate
-GET    /api/forms/{id}/responses/export/  CSV download
-```
+**Core (Assignment "Must Have")**
+- [x] **Form Builder:** Add, edit, delete, and drag-and-drop reorder questions.
+- [x] **Question Types:** Short text, long text, multiple choice, dropdown, email, number, yes/no, rating, and file upload.
+- [x] **Live Preview:** Builder layout features a 1-to-1 live preview.
+- [x] **Form CRUD:** Create, duplicate, rename, delete, and list forms.
+- [x] **Publish/Unpublish:** Generates a secure shareable public link.
+- [x] **Respondent Flow:** One-question-at-a-time, smooth transitions, keyboard navigation (Enter to advance).
+- [x] **Validation:** Both client-side (regex/type checks) and server-side validation independently enforced.
+- [x] **Submission:** Stores responses to DB and displays a customizable thank-you screen.
+- [x] **Results:** Per-form responses view table, individual response inspection, and summary stats.
 
-### Public — Respondent Flow (AllowAny)
-```
-GET    /api/public/forms/{slug}/                 Get published form + questions
-POST   /api/public/forms/{slug}/start/           Create partial response → {response_id}
-POST   /api/public/responses/{id}/answer/        Upsert answer (autosave per question)
-POST   /api/public/responses/{id}/submit/        Validate required fields → mark completed
-```
+**Bonus Features Implemented**
+- [x] **Logic Jumps / Conditional Branching:** Fully functional logic maps allowing users to conditionally route respondents.
+- [x] **CSV Export:** Responses can be exported as a CSV.
+- [x] **Partial-Response Tracking / Completion Rate:** The backend natively handles "partial" status autosaving before completion.
+- [x] **Custom Themes:** Themes are supported natively in the database and applied in the builder UI.
+- [x] **File-Upload Question Type:** Fully supported via `models.FileField`.
 
----
+**Bonus Features Not Implemented**
+- [ ] Dark Mode (omitted in favor of focusing on core Typeform aesthetic).
 
-## Assumptions
+**Placeholder / "Coming Soon" Sections**
+- Connect / Integrations, Workflow automations, Team collaboration, View plans/pricing, and AI-suggestions are intentionally stubbed with visual placeholders as permitted by the assignment to complete the aesthetic.
 
-1. **Single creator**: No login flow. All creator-side API endpoints use a single default user (`creator`). The `Form.owner` FK is modelled correctly for extensibility.
-2. **No real auth**: `DEFAULT_PERMISSION_CLASSES = [AllowAny]` is the global DRF default. Public endpoints additionally set `permission_classes = [AllowAny]` explicitly on the view for clarity.
-3. **SQLite**: Used as-is per assignment spec. No changes to the database engine.
-4. **CORS**: Configured for `http://localhost:3000` only. Update `CORS_ALLOWED_ORIGINS` for production.
-5. **Media files**: `MEDIA_ROOT = backend/myproject/media/`. File uploads work in development; production would need cloud storage (S3, etc.).
+## 9. Assumptions Made
 
-## Implemented Bonus Features
+- **Single Default Creator:** No authentication/login/registration flow was built. A single default creator is assumed and seeded per the assignment's explicit allowances.
+- **Django Admin Panel Removed:** The Django admin panel (`/admin/`) was intentionally removed and not exposed in `urls.py` since it is a direct explicit non-requirement.
+- **Logic Branching Model:** Single-condition logic jumps are supported via sequential evaluation (first rule to evaluate as true routes the user, falling back to a default next question).
+- **Public Upload Sizes:** File uploads are limited by default Django/Next.js request sizes, no strict custom MB limit was added as a soft requirement.
 
-| Feature | Status |
-|---|---|
-| Branching / logic jumps | ✅ Builder UI + respondent-flow evaluation |
-| CSV export | ✅ `/api/forms/{id}/responses/export/` |
-| Completion rate display | ✅ Shown on Results page header |
-| Custom theme (accent + background) | ✅ Form Settings modal + applied on public form |
-| File upload question type | ✅ Modelled, backend accepts multipart, QuestionRenderer has UI |
-| Dark mode | ❌ Not implemented (deferred as last bonus) |
+## 10. Known Limitations
+- The "Universal Mode" dropdown in the top bar is cosmetic only.
+- The results view "completion rate" metric is natively tracked by the backend (`completed_count` vs `response_count`) but isn't explicitly charted in a dedicated visual widget on the frontend UI yet.
