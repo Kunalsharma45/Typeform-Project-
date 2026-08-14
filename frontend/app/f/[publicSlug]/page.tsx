@@ -539,7 +539,7 @@ export default function PublicFormPage() {
                   </div>
                 ))}
 
-                {currentPage.questions.length > 0 && (
+                {currentPage.questions.length > 1 && (
                   <div className="mt-8 flex justify-end">
                     <button
                       onClick={advanceToNext}
