@@ -9,7 +9,7 @@ import Modal from '../components/Modal';
 import TopBar from '../components/TopBar';
 import NavBarTabs from '../components/NavBarTabs';
 import Sidebar from '../components/Sidebar';
-import AISuggestionCard from '../components/AISuggestionCard';
+
 import FormsTable from '../components/FormsTable';
 import {
   MoreHorizontal,
@@ -288,17 +288,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* AI Suggestion Cards Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <AISuggestionCard
-                id="card-1"
-                text="Create an Obtain informed consent from subjects before data collection for ethical compliance."
-              />
-              <AISuggestionCard
-                id="card-2"
-                text="Create a Gather expert opinions on recent studies to identify research gaps and trends."
-              />
-            </div>
+
 
             {/* Forms Table */}
             {loading ? (
