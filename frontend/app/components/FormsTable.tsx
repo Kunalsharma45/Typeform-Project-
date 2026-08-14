@@ -91,7 +91,7 @@ export default function FormsTable({
   return (
     <div className="w-full space-y-1">
       {/* Table Header Row — Strict Proportional CSS Grid matching data rows */}
-      <div className="grid grid-cols-[2.5fr_1fr_1fr_1.2fr_1fr_40px] items-center px-4 py-2 text-[13px] font-semibold text-gray-500 border-b border-gray-100 gap-6 uppercase tracking-wide">
+      <div className="grid grid-cols-[2.5fr_1fr_1fr_1.2fr_1fr_40px] items-center px-4 py-2 text-[14px] text-gray-500 gap-6">
         <div></div>
         <div className="text-right">Responses</div>
         <div className="text-right">Completed</div>
@@ -106,7 +106,7 @@ export default function FormsTable({
       </div>
 
       {/* Table Data Rows */}
-      <div className="space-y-1 pt-1">
+      <div className="space-y-3 pt-4">
         {forms.map((form) => {
           const accentColor = form.theme?.accent_color || '#d9534f';
           const isPublished = form.status === 'published';
@@ -115,7 +115,7 @@ export default function FormsTable({
             <div
               key={form.id}
               onClick={() => onEdit(form.id)}
-              className="grid grid-cols-[2.5fr_1fr_1fr_1.2fr_1fr_40px] items-center px-4 py-3.5 rounded-lg bg-white hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors cursor-pointer group shadow-xs relative gap-6"
+              className="grid grid-cols-[2.5fr_1fr_1fr_1.2fr_1fr_40px] items-center px-4 py-3.5 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 transition-colors cursor-pointer group shadow-sm relative gap-6"
             >
               {/* Form Swatch & Title */}
               <div className="flex items-center gap-3.5 min-w-0 pr-2">

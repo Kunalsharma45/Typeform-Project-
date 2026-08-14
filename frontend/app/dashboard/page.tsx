@@ -171,10 +171,10 @@ export default function DashboardPage() {
         />
 
         {/* Main Content Workspace */}
-        <main className="flex-1 bg-white p-8 lg:p-10 overflow-y-auto">
-          <div className="max-w-6xl mx-auto space-y-8">
+        <main className="flex-1 bg-[#f9f9f9] p-8 lg:p-10 overflow-y-auto">
+          <div className="max-w-6xl mx-auto space-y-6">
             {/* Header Title Row & Right Controls */}
-            <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-gray-200">
               {/* Title & Stubs */}
               <div className="flex items-center gap-3">
                 <h1 className="text-[26px] font-normal text-gray-900 tracking-tight leading-none mr-2">
