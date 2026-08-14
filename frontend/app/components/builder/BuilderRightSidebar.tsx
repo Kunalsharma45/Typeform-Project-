@@ -57,8 +57,8 @@ export default function BuilderRightSidebar({
   onUpdateQuestion,
   onUpdateThankYou,
 }: BuilderRightSidebarProps) {
-  const [timeToCompleteToggle, setTimeToCompleteToggle] = useState(false);
-  const [numSubmissionsToggle, setNumSubmissionsToggle] = useState(false);
+  const [timeToCompleteToggle, setTimeToCompleteToggle] = useState(!!form.welcome_screen?.time_to_complete);
+  const [numSubmissionsToggle, setNumSubmissionsToggle] = useState(!!form.welcome_screen?.show_submission_count);
   const [showWelcomeScreen, setShowWelcomeScreen] = useState(!!form.welcome_screen);
   const [showThankYouScreen, setShowThankYouScreen] = useState(!!form.thank_you_screen);
   
@@ -99,7 +99,11 @@ export default function BuilderRightSidebar({
                 <HelpCircle className="w-4 h-4 text-gray-400" />
               </div>
               <button
-                onClick={() => setTimeToCompleteToggle(!timeToCompleteToggle)}
+                onClick={() => {
+                  const newVal = !timeToCompleteToggle;
+                  setTimeToCompleteToggle(newVal);
+                  onUpdateWelcome({ time_to_complete: newVal });
+                }}
                 className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${timeToCompleteToggle ? 'bg-gray-900' : 'bg-gray-200'
                   }`}
               >
@@ -117,7 +121,11 @@ export default function BuilderRightSidebar({
                 <HelpCircle className="w-4 h-4 text-gray-400" />
               </div>
               <button
-                onClick={() => setNumSubmissionsToggle(!numSubmissionsToggle)}
+                onClick={() => {
+                  const newVal = !numSubmissionsToggle;
+                  setNumSubmissionsToggle(newVal);
+                  onUpdateWelcome({ show_submission_count: newVal });
+                }}
                 className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${numSubmissionsToggle ? 'bg-gray-900' : 'bg-gray-200'
                   }`}
               >

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Clock, Users } from 'lucide-react';
 import { api } from '../../lib/api';
 import type { Form, Question } from '../../lib/types';
 import QuestionRenderer from '../../components/QuestionRenderer';
@@ -114,6 +115,23 @@ function WelcomeScreen({
           <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
+      
+      <div className="flex flex-col items-center gap-2 mt-4 text-sm text-gray-500 font-medium">
+        {ws?.time_to_complete && (
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-4 h-4" />
+            <span>Takes X minutes</span>
+          </div>
+        )}
+        
+        {ws?.show_submission_count && (
+          <div className="flex items-center gap-1.5">
+            <Users className="w-4 h-4" />
+            <span>{form.response_count || 0} submissions</span>
+          </div>
+        )}
+      </div>
+
       <p className="text-xs text-gray-400 mt-6">
         Press <kbd className="px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-500">Enter</kbd> to start
       </p>

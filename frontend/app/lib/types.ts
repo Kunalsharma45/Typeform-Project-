@@ -81,6 +81,8 @@ export interface WelcomeScreen {
   title?: string;
   description?: string;
   button_text?: string;
+  time_to_complete?: boolean;
+  show_submission_count?: boolean;
 }
 
 export interface ThankYouScreen {

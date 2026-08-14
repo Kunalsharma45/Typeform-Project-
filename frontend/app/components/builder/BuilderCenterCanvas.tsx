@@ -21,6 +21,7 @@ import {
   X,
   UploadCloud,
   Star,
+  Users,
 } from 'lucide-react';
 import RatingIcon from '../RatingIcon';
 
@@ -526,10 +527,19 @@ export default function BuilderCenterCanvas({
                   {welcome.button_text || 'Start'}
                 </button>
 
-                <div className="flex items-center gap-1.5 text-xs text-gray-400 font-medium pt-1">
-                  <Clock className="w-3.5 h-3.5 text-gray-400" />
-                  <span>Takes X minutes</span>
-                </div>
+                {welcome.time_to_complete && (
+                  <div className="flex items-center gap-1.5 text-xs text-gray-400 font-medium pt-1">
+                    <Clock className="w-3.5 h-3.5 text-gray-400" />
+                    <span>Takes X minutes</span>
+                  </div>
+                )}
+                
+                {welcome.show_submission_count && (
+                  <div className="flex items-center gap-1.5 text-xs text-gray-400 font-medium pt-1">
+                    <Users className="w-3.5 h-3.5 text-gray-400" />
+                    <span>{form.response_count || 0} submissions</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
