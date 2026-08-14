@@ -69,22 +69,24 @@ function QuestionItemUI({
       {/* Absolute positioned merge dropzone in the center 60% of the item */}
       <div 
         ref={setMergeRef} 
-        className="absolute inset-x-0 top-[20%] bottom-[20%] z-10" 
+        className="absolute inset-x-0 top-[20%] bottom-[20%] z-10 pointer-events-none" 
       />
       
       <div
         ref={dragRef}
         style={style}
         onClick={() => onSelect(q.id)}
-        {...attributes}
-        {...listeners}
         className={`relative flex items-center gap-2 px-2.5 py-2.5 rounded-xl transition-all text-xs ${
           isSelected
             ? 'bg-white border-2 border-gray-900 text-gray-900 font-semibold shadow-sm'
             : 'bg-transparent text-gray-600 hover:bg-gray-100/50'
         } ${isDragging ? 'shadow-2xl opacity-100 z-[9999] cursor-grabbing bg-white border-2 border-gray-900 scale-105' : 'cursor-pointer'} ${isMergeOver && !isDragging ? 'ring-2 ring-indigo-500 bg-indigo-50' : ''}`}
       >
-        <div className="hover:bg-gray-200 p-1 rounded -ml-1 transition-colors">
+        <div 
+          {...attributes}
+          {...listeners}
+          className="hover:bg-gray-200 p-1 rounded -ml-1 transition-colors cursor-grab active:cursor-grabbing"
+        >
           <GripVertical className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-500 flex-shrink-0" />
         </div>
 
@@ -172,15 +174,17 @@ function EndingItemUI({
       ref={dragRef}
       style={style}
       onClick={() => onSelect(ending.id)}
-      {...attributes}
-      {...listeners}
       className={`group relative flex items-center gap-2 px-2.5 py-2.5 rounded-xl transition-all text-xs ${
         isSelected
           ? 'bg-white border-2 border-gray-900 text-gray-900 font-semibold shadow-sm'
           : 'bg-transparent text-gray-600 hover:bg-gray-100/50'
       } ${isDragging ? 'shadow-2xl opacity-100 z-[9999] cursor-grabbing bg-white border-2 border-gray-900 scale-105' : 'cursor-pointer'}`}
     >
-      <div className="hover:bg-gray-200 p-1 rounded -ml-1 transition-colors">
+      <div 
+        {...attributes}
+        {...listeners}
+        className="hover:bg-gray-200 p-1 rounded -ml-1 transition-colors cursor-grab active:cursor-grabbing"
+      >
         <GripVertical className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-500 flex-shrink-0" />
       </div>
 
