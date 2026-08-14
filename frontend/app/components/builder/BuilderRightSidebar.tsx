@@ -369,74 +369,146 @@ export default function BuilderRightSidebar({
               )}
 
               {/* Extra Settings for Short Text */}
-              {selectedQuestion.type === 'short_text' && (
-                <div className="space-y-4 pt-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[13px] text-gray-700">Max characters</span>
-                    <button
-                      onClick={() => setMaxCharsToggle(!maxCharsToggle)}
-                      className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shadow-sm ${
-                        maxCharsToggle ? 'bg-gray-900' : 'bg-gray-200'
-                      }`}
-                    >
-                      <div className={`w-4 h-4 bg-white rounded-full transition-transform absolute top-0.5 left-0.5 shadow-sm ${
-                        maxCharsToggle ? 'translate-x-4' : 'translate-x-0'
-                      }`} />
-                    </button>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-[13px] text-gray-700">
-                      <span>Answer validation</span>
-                      <HelpCircle className="w-4 h-4 text-gray-400" />
-                    </div>
-                    <button
-                      onClick={() => setAnswerValidationToggle(!answerValidationToggle)}
-                      className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shadow-sm ${
-                        answerValidationToggle ? 'bg-gray-900' : 'bg-gray-200'
-                      }`}
-                    >
-                      <div className={`w-4 h-4 bg-white rounded-full transition-transform absolute top-0.5 left-0.5 shadow-sm ${
-                        answerValidationToggle ? 'translate-x-4' : 'translate-x-0'
-                      }`} />
-                    </button>
-                  </div>
+              {selectedQuestion.type === 'short_text' && (() => {
+                const opts = Array.isArray(selectedQuestion.options) ? selectedQuestion.options : [];
+                const maxCharsOpt = opts.find((o: any) => o.id === 'max_chars');
+                const validationOpt = opts.find((o: any) => o.id === 'validation');
+                const placeholderOpt = opts.find((o: any) => o.id === 'placeholder');
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-[13px] text-gray-700">
-                      <span>Custom placeholder text</span>
-                      <HelpCircle className="w-4 h-4 text-gray-400" />
-                    </div>
-                    <button
-                      onClick={() => setCustomPlaceholderToggle(!customPlaceholderToggle)}
-                      className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shadow-sm ${
-                        customPlaceholderToggle ? 'bg-gray-900' : 'bg-gray-200'
-                      }`}
-                    >
-                      <div className={`w-4 h-4 bg-white rounded-full transition-transform absolute top-0.5 left-0.5 shadow-sm ${
-                        customPlaceholderToggle ? 'translate-x-4' : 'translate-x-0'
-                      }`} />
-                    </button>
-                  </div>
+                const hasMaxChars = !!maxCharsOpt;
+                const hasValidation = !!validationOpt;
+                const hasPlaceholder = !!placeholderOpt;
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-[13px] text-gray-700">
-                      <span>Map to contacts</span>
-                      <HelpCircle className="w-4 h-4 text-gray-400" />
+                const setOption = (key: string, value: string) => {
+                  const existing = opts.find((o: any) => o.id === key);
+                  let newOpts;
+                  if (existing) {
+                    newOpts = opts.map((o: any) => o.id === key ? { ...o, label: value } : o);
+                  } else {
+                    newOpts = [...opts, { id: key, label: value }];
+                  }
+                  onUpdateQuestion({ options: newOpts });
+                };
+
+                const toggleOption = (key: string, defaultVal: string) => {
+                  if (opts.find((o: any) => o.id === key)) {
+                    onUpdateQuestion({ options: opts.filter((o: any) => o.id !== key) });
+                  } else {
+                    onUpdateQuestion({ options: [...opts, { id: key, label: defaultVal }] });
+                  }
+                };
+
+                return (
+                  <div className="space-y-4 pt-2">
+                    {/* Max Characters */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[13px] text-gray-700">Max characters</span>
+                        <button
+                          onClick={() => toggleOption('max_chars', '50')}
+                          className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shadow-sm ${
+                            hasMaxChars ? 'bg-gray-900' : 'bg-gray-200'
+                          }`}
+                        >
+                          <div className={`w-4 h-4 bg-white rounded-full transition-transform absolute top-0.5 left-0.5 shadow-sm ${
+                            hasMaxChars ? 'translate-x-4' : 'translate-x-0'
+                          }`} />
+                        </button>
+                      </div>
+                      {hasMaxChars && (
+                        <input
+                          type="number"
+                          className="w-full bg-white border border-gray-200 focus:border-black rounded-lg px-3 py-1.5 text-[13px] outline-none transition-colors"
+                          value={maxCharsOpt?.label || '50'}
+                          onChange={(e) => setOption('max_chars', e.target.value)}
+                        />
+                      )}
                     </div>
-                    <button
-                      onClick={() => setMapToContactsToggle(!mapToContactsToggle)}
-                      className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shadow-sm ${
-                        mapToContactsToggle ? 'bg-gray-900' : 'bg-gray-200'
-                      }`}
-                    >
-                      <div className={`w-4 h-4 bg-white rounded-full transition-transform absolute top-0.5 left-0.5 shadow-sm ${
-                        mapToContactsToggle ? 'translate-x-4' : 'translate-x-0'
-                      }`} />
-                    </button>
+                    
+                    {/* Answer validation */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-[13px] text-gray-700">
+                          <span>Answer validation</span>
+                          <HelpCircle className="w-4 h-4 text-gray-400" />
+                        </div>
+                        <button
+                          onClick={() => toggleOption('validation', 'text')}
+                          className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shadow-sm ${
+                            hasValidation ? 'bg-gray-900' : 'bg-gray-200'
+                          }`}
+                        >
+                          <div className={`w-4 h-4 bg-white rounded-full transition-transform absolute top-0.5 left-0.5 shadow-sm ${
+                            hasValidation ? 'translate-x-4' : 'translate-x-0'
+                          }`} />
+                        </button>
+                      </div>
+                      {hasValidation && (
+                        <div className="relative">
+                          <select
+                            className="w-full bg-white border border-gray-200 focus:border-black rounded-lg px-3 py-1.5 text-[13px] appearance-none outline-none transition-colors cursor-pointer"
+                            value={validationOpt?.label || 'text'}
+                            onChange={(e) => setOption('validation', e.target.value)}
+                          >
+                            <option value="text">Text</option>
+                            <option value="number">Number</option>
+                            <option value="url">URL</option>
+                            <option value="email">Email</option>
+                          </select>
+                          <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Custom placeholder text */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-[13px] text-gray-700">
+                          <span>Custom placeholder text</span>
+                          <HelpCircle className="w-4 h-4 text-gray-400" />
+                        </div>
+                        <button
+                          onClick={() => toggleOption('placeholder', 'Type your answer here...')}
+                          className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shadow-sm ${
+                            hasPlaceholder ? 'bg-gray-900' : 'bg-gray-200'
+                          }`}
+                        >
+                          <div className={`w-4 h-4 bg-white rounded-full transition-transform absolute top-0.5 left-0.5 shadow-sm ${
+                            hasPlaceholder ? 'translate-x-4' : 'translate-x-0'
+                          }`} />
+                        </button>
+                      </div>
+                      {hasPlaceholder && (
+                        <input
+                          type="text"
+                          className="w-full bg-white border border-gray-200 focus:border-black rounded-lg px-3 py-1.5 text-[13px] outline-none transition-colors"
+                          value={placeholderOpt?.label || ''}
+                          onChange={(e) => setOption('placeholder', e.target.value)}
+                          placeholder="Type your answer here..."
+                        />
+                      )}
+                    </div>
+
+                    {/* Map to contacts */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-[13px] text-gray-700">
+                        <span>Map to contacts</span>
+                        <HelpCircle className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <button
+                        onClick={() => setMapToContactsToggle(!mapToContactsToggle)}
+                        className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shadow-sm ${
+                          mapToContactsToggle ? 'bg-gray-900' : 'bg-gray-200'
+                        }`}
+                      >
+                        <div className={`w-4 h-4 bg-white rounded-full transition-transform absolute top-0.5 left-0.5 shadow-sm ${
+                          mapToContactsToggle ? 'translate-x-4' : 'translate-x-0'
+                        }`} />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
 
               {/* Universal Setting for all Question Types within Answer Box */}
