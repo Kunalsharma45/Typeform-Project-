@@ -69,18 +69,28 @@ export default function BuilderTopBar({
     }
   };
 
-  const handlePublish = async () => {
+  const handleTogglePublish = async () => {
     try {
       setIsPublishing(true);
-      const updatedForm = await api.forms.publish(formId);
-      toast.success('Form published successfully!');
-      if (onPublish) {
-        onPublish(updatedForm);
+      if (status === 'published') {
+        const updatedForm = await api.forms.unpublish(formId);
+        toast.success('Form unpublished successfully!');
+        if (onPublish) {
+          onPublish(updatedForm);
+        } else {
+          window.location.reload();
+        }
       } else {
-        window.location.reload();
+        const updatedForm = await api.forms.publish(formId);
+        toast.success('Form published successfully!');
+        if (onPublish) {
+          onPublish(updatedForm);
+        } else {
+          window.location.reload();
+        }
       }
     } catch (e) {
-      toast.error('Failed to publish form');
+      toast.error(status === 'published' ? 'Failed to unpublish form' : 'Failed to publish form');
     } finally {
       setIsPublishing(false);
     }
@@ -203,7 +213,7 @@ export default function BuilderTopBar({
         </button>
 
         <button
-          onClick={handlePublish}
+          onClick={handleTogglePublish}
           disabled={isPublishing}
           className={`text-sm font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer ${
             status === 'published' 
@@ -211,7 +221,7 @@ export default function BuilderTopBar({
               : 'bg-black text-white hover:bg-gray-800'
           }`}
         >
-          {isPublishing ? '...' : status === 'published' ? 'Published' : 'Publish'}
+          {isPublishing ? '...' : status === 'published' ? 'Unpublish' : 'Publish'}
         </button>
 
         <button
