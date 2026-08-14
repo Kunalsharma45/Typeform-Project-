@@ -20,6 +20,7 @@ import {
   ChevronDown,
   X,
   UploadCloud,
+  Star,
 } from 'lucide-react';
 import {
   DndContext,
@@ -331,6 +332,23 @@ function QuestionEditorPreview({
         <UploadCloud className="w-10 h-10 text-gray-400 mb-2 stroke-[1.5]" />
         <span className="text-[13px] font-bold text-gray-800">Choose file <span className="font-normal text-gray-600">or drag here</span></span>
         <span className="text-[11px] text-gray-400 mt-1">Size limit: 10MB</span>
+      </div>
+    );
+  }
+
+  if (question.type === 'rating') {
+    const opts = Array.isArray(question.options) ? question.options : [];
+    const max = parseInt(opts.find((o: any) => o.id === 'max')?.label || '5', 10);
+    const stars = Array.from({ length: max }, (_, i) => i + 1);
+
+    return (
+      <div className="w-full flex items-center gap-4 mt-6">
+        {stars.map((num) => (
+          <div key={num} className="flex flex-col items-center gap-2">
+            <Star className="w-10 h-10 text-gray-800 stroke-[1] cursor-pointer hover:fill-gray-100 transition-colors" />
+            <span className="text-[13px] font-semibold text-gray-600">{num}</span>
+          </div>
+        ))}
       </div>
     );
   }

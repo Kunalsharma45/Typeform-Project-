@@ -269,6 +269,66 @@ export default function BuilderRightSidebar({
                 </button>
               </div>
 
+              {/* Extra Settings for Rating */}
+              {selectedQuestion.type === 'rating' && (
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <select
+                        className="w-full bg-white border border-gray-200 hover:border-gray-300 rounded-xl px-3 py-2 text-[13px] font-medium appearance-none outline-none transition-colors shadow-sm cursor-pointer"
+                        value={(() => {
+                          const opts = Array.isArray(selectedQuestion.options) ? selectedQuestion.options : [];
+                          return opts.find((o: any) => o.id === 'max')?.label || '5';
+                        })()}
+                        onChange={(e) => onUpdateQuestion({ options: [{ id: 'max', label: e.target.value }] })}
+                      >
+                        {[3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                          <option key={n} value={n}>{n}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                    <button 
+                      onClick={showComingSoon}
+                      className="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2 flex items-center justify-between hover:bg-gray-50 transition-colors shadow-sm cursor-pointer"
+                    >
+                      <Star className="w-4 h-4 text-gray-600 stroke-[1.5]" />
+                      <ChevronDown className="w-4 h-4 text-gray-400" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[13px] text-gray-700">
+                      <span>Lead scoring</span>
+                      <HelpCircle className="w-3.5 h-3.5 text-gray-400" />
+                    </div>
+                    <button
+                      onClick={showComingSoon}
+                      className="text-[11px] font-semibold text-gray-600 border border-gray-200 rounded-lg px-2.5 py-1 hover:bg-gray-50 transition-colors"
+                    >
+                      Set rules
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[13px] text-gray-700">
+                      <span>Map to contacts</span>
+                      <HelpCircle className="w-3.5 h-3.5 text-gray-400" />
+                    </div>
+                    <button
+                      onClick={() => setMapToContactsToggle(!mapToContactsToggle)}
+                      className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shadow-sm ${
+                        mapToContactsToggle ? 'bg-gray-900' : 'bg-gray-200'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 bg-white rounded-full transition-transform absolute top-0.5 left-0.5 shadow-sm ${
+                        mapToContactsToggle ? 'translate-x-4' : 'translate-x-0'
+                      }`} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Extra Settings for Phone Number */}
               {selectedQuestion.type === 'number' && (
                 <>
